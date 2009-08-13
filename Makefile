@@ -1,10 +1,11 @@
-CC = g++
-OUT = lesson37
+CC=g++
+SRC=main.cpp CVector.cpp
+OUT=quaker
 CFLAGS=-Wall -ansi -std=c++0x
 LDFLAGS=-lm -lGL -lGLU `sdl-config --cflags --libs`
 
 all:
-	$(CC) lesson37.cpp CVector.cpp  ${CFLAGS} -o ${OUT} ${LDFLAGS}
+	$(CC) ${SRC} ${CFLAGS} -o ${OUT} ${LDFLAGS}
 
 run: all
 	./${OUT}
