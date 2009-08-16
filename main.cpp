@@ -39,15 +39,15 @@ int isActive = TRUE; /* whether or not the window is active */
 int videoFlags; /* Flags to pass to SDL_SetVideoMode */
 
 bool   outlineDraw   = true;    // Flag To Draw The Outline
-bool   outlineSmooth = false;   // Flag To Anti-Alias The Lines
+bool   outlineSmooth = true;    // Flag To Anti-Alias The Lines
 float  outlineWidth  = 3.0f;    // Width Of The Lines
-VECTOR lightAngle    = { 0.0f, 0.0f, 1.0f };
+VECTOR lightAngle    = { 1.0f, -1.0f, 0.0f };
 
 list<Bullet*> bullets;
 list<Enemy*> enemies;
 
-Model *model = new Model("Data/Shader.txt", "Data/Model.txt");
 Scene *scene = new Scene;
+Model *model;
 Player *player;
 Camera *camera;
 
@@ -173,9 +173,7 @@ void drawScene()
     }
 
     /* Draw it to the screen */
-    SDL_GL_SwapBuffers( );
-
-    SDL_Delay(100);
+    SDL_GL_SwapBuffers();
 }
 
 void handleKeyPress( SDL_keysym *keysym )
@@ -247,14 +245,22 @@ void handleEvents()
 
 void main_loop()
 {
-    /* wait for events */
+    Uint32 const fps = 25;
+    Uint32 ticks;
+
     while( true )
     {
+        ticks = SDL_GetTicks();
+
         // if ( isActive )
         // {
         handleEvents();
         drawScene();
         // }
+
+        int delay = (1000.0f/fps) - (SDL_GetTicks() - ticks);
+        SDL_Delay( delay > 0 ? delay : 1 );
+
     }
 }
 
@@ -323,6 +329,7 @@ int main(int argc, char **argv)
     initSDL();
     initGL();
 
+    model = new Model("Data/Shader.txt", "Data/Model.txt");
     player = (new Player())->setModel(model);
     camera = (new Camera(player))->setPos(Vec(0.0f, 4.0f, 0.0f));
 

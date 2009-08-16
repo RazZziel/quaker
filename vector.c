@@ -4,11 +4,11 @@
 void Normalize(VECTOR &V)
 // Creates a VECTOR with a unit length of 1
 {
-    float M = Magnitude (V);                                     // Calculate The Length Of The VECTOR
+    float M = Magnitude (V);      // Calculate The Length Of The VECTOR
 
-    if (M != 0.0f)                                               // Make Sure We Don't Divide By 0
+    if (M != 0.0f)                // Make Sure We Don't Divide By 0
     {
-        V.x /= M;                                                // Normalize The 3 Components
+        V.x /= M;                 // Normalize The 3 Components
         V.y /= M;
         V.z /= M;
     }
