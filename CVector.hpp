@@ -19,60 +19,37 @@
  ***************************************************************************/
 
 
+#ifndef _CVECTOR_H_
+#define _CVECTOR_H_
 
-#ifndef __CVECTOR_H__
-#define __CVECTOR_H__
+#include <math.h>
 
+class Vec {
 
-#define INT_VECTOR   0
-#define FLOAT_VECTOR 0
-
-
-class Vector {
-	
 public:
     float x, y, z;
-		
-    Vector(void) : x(0), y(0), z(0) {}
-    Vector(float x, float y, float z = 0) : x(x), y(y), z(z) {}
-		
-    float module(void);
+
+    Vec(void) : x(0), y(0), z(0) {}
+    Vec(float x, float y, float z = 0) : x(x), y(y), z(z) {}
+
+    inline float module(void) { return sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2)); }
     void normalize(void);
     void reverse(void);
-		
-    Vector& operator+=(Vector u);
-    Vector& operator-=(Vector u);
-    Vector& operator*=(float s);
-    Vector& operator/=(float s);
-		
-    inline Vector operator+(Vector u)	{ return Vector(x + u.x, y + u.y, z + u.z); }
-    inline Vector operator-(Vector u)	{ return Vector(x - u.x, y - u.y, z - u.z); }
-    inline float operator*(Vector u)	{ return (x * u.x) + (y * u.y) + (z * u.z); }
-    inline Vector operator*(float s)	{ return Vector(x*s, y*s, z*s); }
-    inline Vector operator/(float s)	{ return Vector(x/s, y/s, z/s); }
-    inline Vector operator-(void)		{ return Vector(-x, -y, -z); }
-		
+
+    Vec& operator+=(Vec u);
+    Vec& operator-=(Vec u);
+    Vec& operator*=(float s);
+    Vec& operator/=(float s);
+
+    inline Vec operator+(Vec u)    { return Vec(x + u.x, y + u.y, z + u.z); }
+    inline Vec operator-(Vec u)    { return Vec(x - u.x, y - u.y, z - u.z); }
+    inline float operator*(Vec u)  { return (x * u.x) + (y * u.y) + (z * u.z); }
+    inline Vec operator*(float s)  { return Vec(x*s, y*s, z*s); }
+    inline Vec operator/(float s)  { return Vec(x/s, y/s, z/s); }
+    inline Vec operator-(void)     { return Vec(-x, -y, -z); }
 };
 
+#include <iostream>
+std::ostream& operator<< (std::ostream& out, const Vec& p );
 
-
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif /* _CVECTOR_H_ */

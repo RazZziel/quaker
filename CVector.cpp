@@ -19,73 +19,63 @@
  ***************************************************************************/
 
 
-
-#include <math.h>
-
-
-#include "CVector.h"
+#include "CVector.hpp"
 
 
-float Vector::module(void) {
-	
-	return sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
-	
+void Vec::normalize(void)
+{
+    float mod = module();
+
+    x /= mod;
+    y /= mod;
+    z /= mod;
 }
 
-void Vector::normalize(void) {
-	
-	float mod = module();
-	
-	x /= mod;
-	y /= mod;
-	z /= mod;
-	
+void Vec::reverse(void)
+{
+    x = -x;
+    y = -y;
+    z = -z;
 }
 
-void Vector::reverse(void) {
-	
-	x = -x;
-	y = -y;
-	z = -z;
-	
+Vec& Vec::operator+=(Vec u)
+{
+    x += u.x;
+    y += u.y;
+    y += u.z;
+
+    return *this;
 }
 
-Vector& Vector::operator+=(Vector u) {
-	
-	x += u.x;
-	y += u.y;
-	y += u.z;
-	
-	return *this;
-	
+Vec& Vec::operator-=(Vec u)
+{
+    x -= u.x;
+    y -= u.y;
+    y -= u.z;
+
+    return *this;
 }
 
-Vector& Vector::operator-=(Vector u) {
-	
-	x -= u.x;
-	y -= u.y;
-	y -= u.z;
-	
-	return *this;
-	
+Vec& Vec::operator*=(float s)
+{
+    x *= s;
+    y *= s;
+    y *= s;
+
+    return *this;
 }
 
-Vector& Vector::operator*=(float s) {
-	
-	x *= s;
-	y *= s;
-	y *= s;
-	
-	return *this;
-	
+Vec& Vec::operator/=(float s)
+{
+    x /= s;
+    y /= s;
+    y /= s;
+
+    return *this;
 }
 
-Vector& Vector::operator/=(float s) {
-	
-	x /= s;
-	y /= s;
-	y /= s;
-	
-	return *this;
-	
+#include <iostream>
+std::ostream& operator<< (std::ostream& out, const Vec& p )
+{
+    return out << '(' << p.x << ' ' << p.y << ' ' << p.z << ')';
 }

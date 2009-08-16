@@ -1,7 +1,7 @@
 CC=g++
-SRC=main.cpp CVector.cpp
+SRC=main.cpp CEntity.cpp CModel.cpp CScene.cpp CVector.cpp vector.c
 OUT=quaker
-CFLAGS=-Wall -ansi -std=c++0x
+CFLAGS=-Wall -ansi -std=c++0x -g3
 LDFLAGS=-lm -lGL -lGLU `sdl-config --cflags --libs`
 
 all:
