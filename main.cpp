@@ -91,6 +91,18 @@ void initGL()
     glEnable (GL_CULL_FACE);                             // Enable OpenGL Face Culling
 
     glDisable (GL_LIGHTING);                             // Disable OpenGL Lighting
+
+    /* Fog */
+
+    GLfloat fogColor[4]= {0.5f, 0.5f, 0.5f, 1.0f};
+    glClearColor(0.5f,0.5f,0.5f,1.0f);  // We'll clear to the color of the fog ( modified )
+    glFogi(GL_FOG_MODE, GL_LINEAR);     // Fog mode
+    glFogfv(GL_FOG_COLOR, fogColor);    // Set fog color
+    glFogf(GL_FOG_DENSITY, 0.35f);      // Fog density
+    glHint(GL_FOG_HINT, GL_DONT_CARE);  // Fog hint value
+    glFogf(GL_FOG_START, 5.0f);         // Fog start depth
+    glFogf(GL_FOG_END, 30.0f);          // Fog end depth
+    glEnable(GL_FOG);
 }
 
 
