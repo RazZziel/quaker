@@ -3,48 +3,73 @@
 using namespace std;
 
 extern Scene *scene;
+extern Player *player;
 extern list<Bullet*> bullets;
 extern list<Enemy*> enemies;
 
 void Camera::update()
 {
+    Vec dp = m_follow->m_p - m_p;
+
     /* x */
 
-    if (fabs(m_p.x-m_follow->m_p.x) > m_f)
+    if (fabs(dp.x) > m_f)
     {
-        m_v.x += copysign(m_a.x, m_follow->m_p.x - m_p.x);
+        m_v.x += copysign(m_a.x, dp.x);
 
         if (fabs(m_v.x) > m_v_max.x)
             m_v.x = copysignf(m_v_max.x, m_v.x);
 
         if (fabs(m_v.x) > m_f)
-            m_v.x -= m_f * copysignf(1.0f, m_v.x);
+            m_v.x -= copysignf(m_f, m_v.x);
         else
             m_v.x = 0.0f;
 
         m_p.x += m_v.x;
     }
     else
+    {
         m_p.x = m_follow->m_p.x;
+    }
 
     /* z */
 
-    if (fabs(m_p.z-m_follow->m_p.z) > m_f)
+    if (fabs(dp.z) > m_f)
     {
-        m_v.z += copysign(m_a.z, m_follow->m_p.z - m_p.z);
-
-        if (fabs(m_v.z) > m_v_max.z)
-            m_v.z = copysignf(m_v_max.z, m_v.z);
-
-        if (fabs(m_v.z) > m_f)
-            m_v.z -= m_f * copysignf(1.0f, m_v.z);
+        // TODO
+        if ( dp.module() >= m_maxDistance )
+        {
+            m_v.z = m_follow->m_v.z;
+        }
         else
-            m_v.z = 0.0f;
+        {
+            //m_v.z += copysign(m_a.z, dp.z);
+
+            if (fabs(m_v.z) > m_f)
+                m_v.z -= copysignf(m_f, m_v.z);
+            else
+                m_v.z = 0.0f;
+        }
 
         m_p.z += m_v.z;
     }
     else
+    {
         m_p.z = m_follow->m_p.z;
+    }
+}
+
+void Camera::look()
+{
+#if 0
+    gluLookAt( 15.0f, player->m_p.y, player->m_p.z,
+               unfoldVector(m_follow->m_p),
+               0.0f, 1.0f, 0.0f );
+#else
+    gluLookAt( unfoldVector(m_p),
+               unfoldVector(m_follow->m_p),
+               0.0f, 0.0f, 1.0f );
+#endif
 }
 
 void Enemy::update()
@@ -85,13 +110,13 @@ void Player::getInput()
 {
     Uint8 *keystate = SDL_GetKeyState(NULL);
 
-    if ( keystate[SDLK_UP] )
+    if ( keystate[SDLK_UP] || keystate[SDLK_k] )
         m_v.z += m_a.z;
-    if ( keystate[SDLK_DOWN] )
+    if ( keystate[SDLK_DOWN] || keystate[SDLK_j] )
         m_v.z -= m_a.z;
-    if ( keystate[SDLK_RIGHT] )
+    if ( keystate[SDLK_RIGHT] || keystate[SDLK_l] )
         m_v.x += m_a.x;
-    if ( keystate[SDLK_LEFT] )
+    if ( keystate[SDLK_LEFT] || keystate[SDLK_h] )
         m_v.x -= m_a.x;
 
     if ( keystate[SDLK_SPACE] || keystate[SDLK_z] )
@@ -107,6 +132,7 @@ void Enemy::draw()
 {
     glPushMatrix();
     {
+        glRotatef ((m_p.z-player->m_p.z)*LULZFACTOR, 0.0f, 0.0f, 1.0f);//lulz
         glTranslatef (unfoldVector(m_p));
         glScalef (0.5f, 0.5f, 0.5f);
         glRotatef (180, 0.0f, 1.0f, 0.0f);
@@ -144,6 +170,7 @@ void Bullet::draw()
 {
     glPushMatrix();
     {
+        glRotatef ((m_p.z-player->m_p.z)*LULZFACTOR, 0.0f, 0.0f, 1.0f);//lulz
         glTranslatef (m_p.x, m_p.y, m_p.z+0.6f);
         glBegin(GL_QUADS);
         {

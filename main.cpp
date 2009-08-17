@@ -108,10 +108,11 @@ void initGL()
 
 void add_enemy()
 {
-    enemies.push_back( (new Enemy( player->m_p - Vec(((float)random()/(float)RAND_MAX)*4.0f-2.0f,
-                                                     0.0f,
-                                                     -10.0f-(((float)random()/(float)RAND_MAX)*50.0f)),
-                                   {0.0f, 0.0f, -0.2f+(float)random()/(float)RAND_MAX*-0.8f} ))->setModel(model) );
+    enemies.push_back( (new Enemy(
+                            { ((float)random() / (float)RAND_MAX)*scene->margins[1]*2.0f - scene->margins[1],
+                                    player->m_p.y,
+                                    player->m_p.z + 10.0f + (((float)random()/(float)RAND_MAX)*50.0f) },
+                            {0.0f, 0.0f, -0.2f+(float)random()/(float)RAND_MAX*-0.8f} ))->setModel(model) );
 }
 
 void drawScene()
@@ -267,6 +268,7 @@ void main_loop()
         // if ( isActive )
         // {
         handleEvents();
+        glRotatef(90.0f,0.0f,0.0f,1.0f);
         drawScene();
         // }
 

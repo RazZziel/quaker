@@ -22,5 +22,7 @@
 #include "CScene.hpp"
 #include "CEntity.hpp"
 
+#define LULZFACTOR ( 2 * sin(SDL_GetTicks()/1000.0f) )
+
 
 #endif /* _MAIN_H_ */
