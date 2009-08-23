@@ -63,7 +63,7 @@ public:
     Object* setModel(Model *model) { m_model = model; return this; }
     Object* setPos(Vec p) { m_p = p; return this; }
     void draw();
-protected:
+//protected:
     Model *m_model;
 };
 

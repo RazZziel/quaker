@@ -22,7 +22,7 @@ public:
 
     void draw();
 
-private:
+//private:
     POLYGON *m_polyData;        // Polygon Data
     int      m_polyNum;         // Number Of Polygons
     GLuint   m_shaderTexture[1]; // Storage For One Texture

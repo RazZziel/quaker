@@ -7,9 +7,9 @@ extern bool outlineWidth;
 
 void Model::draw()
 {
-    float  TmpShade;               // Temporary Shader Value
-    VECTOR TmpVector, TmpNormal;   // Temporary Vector Structures
-    MATRIX TmpMatrix;              // Temporary MATRIX Structure
+    float  TmpShade;       // Temporary Shader Value
+    VECTOR TmpVector;      // Temporary Vector Structures
+    MATRIX TmpMatrix;      // Temporary MATRIX Structure
 
     glGetFloatv (GL_MODELVIEW_MATRIX, TmpMatrix.Data);           // Get The Generated Matrix
 
@@ -26,11 +26,7 @@ void Model::draw()
         {
             for (int j = 0; j < 3; j++)                          // Loop Through Each Vertex
             {
-                TmpNormal.x = m_polyData[i].Verts[j].Nor.x;      // Fill Up The TmpNormal Structure With
-                TmpNormal.y = m_polyData[i].Verts[j].Nor.y;      // The Current Vertices' Normal Values
-                TmpNormal.z = m_polyData[i].Verts[j].Nor.z;
-
-                RotateVector (TmpMatrix, TmpNormal, TmpVector);  // Rotate This By The Matrix
+                RotateVector (TmpMatrix, m_polyData[i].Verts[j].Nor, TmpVector);  // Rotate This By The Matrix
 
                 Normalize (TmpVector);                           // Normalize The New Normal
 

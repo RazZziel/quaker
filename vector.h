@@ -13,7 +13,7 @@ typedef struct tagVECTOR                    // A Structure To Hold A Single VECT
     //VECTOR(_x,_y,_z) : x(_x), y(_y), z(_z) {};
 } VECTOR;
 
-#define unfoldVector(v) v.x, v.y, v.z
+#define unfoldVector(v) (v).x, (v).y, (v).z
 
 typedef struct tagVERTEX        // A Structure To Hold A Single Vertex
 {
@@ -30,5 +30,6 @@ inline float DotProduct(VECTOR &V1, VECTOR &V2) { return V1.x * V2.x + V1.y * V2
 inline float Magnitude(VECTOR &V) { return sqrtf (V.x * V.x + V.y * V.y + V.z * V.z); }
 void Normalize(VECTOR &V);
 void RotateVector (MATRIX &M, VECTOR &V, VECTOR &D);
+VECTOR RotateVectorIn (MATRIX &M, VECTOR &V);
 
 #endif /* _VECTOR_H_ */

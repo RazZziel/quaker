@@ -20,3 +20,10 @@ void RotateVector (MATRIX &M, VECTOR &V, VECTOR &D)                     // Rotat
     D.y = (M.Data[1] * V.x) + (M.Data[5] * V.y) + (M.Data[9]  * V.z);   // Rotate Around The y Axis
     D.z = (M.Data[2] * V.x) + (M.Data[6] * V.y) + (M.Data[10] * V.z);   // Rotate Around The Z Axis
 }
+
+VECTOR RotateVectorIn (MATRIX &M, VECTOR &V)
+{
+    return {(M.Data[0] * V.x) + (M.Data[4] * V.y) + (M.Data[8]  * V.z),
+            (M.Data[1] * V.x) + (M.Data[5] * V.y) + (M.Data[9]  * V.z),
+            (M.Data[2] * V.x) + (M.Data[6] * V.y) + (M.Data[10] * V.z)};
+}
