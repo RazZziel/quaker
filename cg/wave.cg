@@ -1,0 +1,33 @@
+struct appdata
+{
+    float4 position : POSITION;
+    float4 color    : COLOR0;
+    float3 wave     : COLOR1;
+    float3 path     : ATTR6;
+};
+
+struct vfconn
+{
+    float4 HPos	: POSITION;
+    float4 Col0	: COLOR0;
+};
+
+vfconn main(appdata IN,	uniform float4x4 ModelViewProj)
+{
+    vfconn OUT;
+
+    if (IN.position.x < IN.path.x || IN.position.x > IN.path.y)
+        IN.position.y = ( sin(IN.wave.x + (IN.position.x / 5.0) ) + sin(IN.wave.x + (IN.position.z / 4.0) ) ) * 2.5f;
+    else
+        IN.position.y += IN.path.z;
+
+    // Transform The Vertex Position Into Homogenous Clip-Space (Required)
+    OUT.HPos = mul(ModelViewProj, IN.position);
+
+    OUT.Col0.x = sin(IN.position.x+IN.position.y);
+    OUT.Col0.y = cos(IN.position.x+IN.position.y);
+    OUT.Col0.z = tan(IN.position.x+IN.position.y);
+    OUT.Col0.w = IN.color.w;
+
+    return OUT;
+}
