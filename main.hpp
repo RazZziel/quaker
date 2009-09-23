@@ -5,10 +5,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
 #include <math.h>
 #include <SDL.h>
+
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <Cg/cg.h>
+#include <Cg/cgGL.h>
 
 #include <iostream>
 #include <list>
@@ -23,6 +26,24 @@
 #include "CEntity.hpp"
 
 #define LULZFACTOR ( 2 * sin(SDL_GetTicks()/1000.0f) )
+
+#define derp(a,b,c,i)                                                   \
+    do {                                                                \
+        VECTOR TmpNormal = {(a),(b),(c)+(i)-player->m_p.z};             \
+        VECTOR TmpLighta = {unfoldVector(-( /*player->m_v +*/ Vec( 3.0f,-3.0f,0.1f)))}; \
+        VECTOR TmpLightb = {unfoldVector(-( /*player->m_v +*/ Vec(-3.0f,-3.0f,0.1f)))}; \
+        Normalize(TmpLighta);                                           \
+        Normalize(TmpLightb);                                           \
+        VECTOR TmpVector  = RotateVectorIn(TmpMatrix, TmpNormal);       \
+        Normalize (TmpVector);                                          \
+        float TmpShadea = DotProduct(TmpVector, TmpLighta);             \
+        if (TmpShadea < 0.0f) TmpShadea = 0.0f;                         \
+        float TmpShadeb = DotProduct(TmpVector, TmpLightb);             \
+        if (TmpShadeb < 0.0f) TmpShadeb = 0.0f;                         \
+        /*float TmpShade = max(TmpShadea, TmpShadeb);*/                 \
+        glTexCoord1f(TmpShadeb);                                        \
+        glVertex3f((a), (b), (c));                                      \
+    } while (0)
 
 
 #endif /* _MAIN_H_ */

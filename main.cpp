@@ -38,22 +38,28 @@ SDL_Surface *surface;
 int isActive = TRUE; /* whether or not the window is active */
 int videoFlags; /* Flags to pass to SDL_SetVideoMode */
 
-bool   outlineDraw   = true;    // Flag To Draw The Outline
-bool   outlineSmooth = true;    // Flag To Anti-Alias The Lines
-float  outlineWidth  = 3.0f;    // Width Of The Lines
+bool   outlineDraw   = true;
+bool   enableCg      = true;
+bool   outlineSmooth = true;
+float  outlineWidth  = 3.0f;
 VECTOR lightAngle    = { 1.0f, -1.0f, 0.0f };
 
 list<Bullet*> bullets;
-list<Enemy*> enemies;
+list<Enemy*>  enemies;
 
-Scene *scene = new Scene;
-Model *model;
+Scene  *scene = new Scene;
+Model  *model;
 Player *player;
 Camera *camera;
 
+CGcontext   cgContext;
+CGprogram   cgProgram;
+CGprofile   cgVertexProfile;
+CGparameter position, color, modelViewMatrix, wave, path;
 
 void quit()
 {
+    cgDestroyContext( cgContext );
     SDL_Quit();
 }
 
@@ -72,7 +78,6 @@ void resizeWindow(int width, int height)
     glMatrixMode(GL_MODELVIEW);
 }
 
-
 void initGL()
 {
     resizeWindow( SCREEN_WIDTH, SCREEN_HEIGHT );
@@ -88,12 +93,39 @@ void initGL()
     glShadeModel (GL_SMOOTH);                            // Enables Smooth Color Shading
     glDisable (GL_LINE_SMOOTH);                          // Initially Disable Line Smoothing
 
-    glEnable (GL_CULL_FACE);                             // Enable OpenGL Face Culling
+    glEnable(GL_CULL_FACE);
 
-    glDisable (GL_LIGHTING);                             // Disable OpenGL Lighting
+    glDisable(GL_LIGHTING);
+
+
+    /* Cg */
+    cgContext = cgCreateContext();
+    if (cgContext == 0)
+    {
+        fprintf( stderr, "Failed To Create Cg Context\n" );
+        exit(1);
+    }
+    cgVertexProfile = cgGLGetLatestProfile( CG_GL_VERTEX );
+    if (cgVertexProfile == CG_PROFILE_UNKNOWN)
+    {
+        fprintf( stderr, "Invalid profile type\n" );
+        exit(1);
+    }
+    cgGLSetOptimalOptions( cgVertexProfile );
+    cgProgram = cgCreateProgramFromFile( cgContext, CG_SOURCE, "./cg/wave.cg", cgVertexProfile, "main", 0 );
+    if (cgProgram == 0)
+    {
+        fprintf( stderr, "%s \n", cgGetErrorString(cgGetError()) );
+        exit(1);
+    }
+    cgGLLoadProgram(cgProgram);
+    position        = cgGetNamedParameter( cgProgram, "IN.position" );
+    color           = cgGetNamedParameter( cgProgram, "IN.color" );
+    wave            = cgGetNamedParameter( cgProgram, "IN.wave" );
+    path            = cgGetNamedParameter( cgProgram, "IN.path" );
+    modelViewMatrix = cgGetNamedParameter( cgProgram, "ModelViewProj" );
 
     /* Fog */
-
     GLfloat fogColor[4]= {0.5f, 0.5f, 0.5f, 1.0f};
     glClearColor(0.5f,0.5f,0.5f,1.0f);  // We'll clear to the color of the fog ( modified )
     glFogi(GL_FOG_MODE, GL_LINEAR);     // Fog mode
@@ -128,12 +160,53 @@ void drawScene()
     else                                                         // We Don't Want Smooth Lines
         glDisable (GL_LINE_SMOOTH);                              // Disable Anti-Aliasing
 
-
     camera->update();
+#if 1
     camera->look();
+#else
+    gluLookAt(0.0f, 25.0f, -45.0f, 0.0f, 0.0f, 0.0f, 0, 1, 0);
+#endif
 
     player->getInput();
     player->update();
+
+    if ( enableCg )
+    {
+        cgGLSetStateMatrixParameter( modelViewMatrix,
+                                     CG_GL_MODELVIEW_PROJECTION_MATRIX,
+                                     CG_GL_MATRIX_IDENTITY );
+        cgGLEnableProfile( cgVertexProfile );
+        cgGLBindProgram( cgProgram );
+        cgGLSetParameter4f( color, 0.5f, 1.0f, 0.5f, 1.0f );
+    }
+
+#define SIZE 64
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glDisable(GL_CULL_FACE);
+    MATRIX TmpMatrix;
+    glGetFloatv (GL_MODELVIEW_MATRIX, TmpMatrix.Data);
+    for (int x = -(SIZE/2); x < (SIZE/2); x++)
+    {
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int z = player->m_p.z-(SIZE); z < player->m_p.z+(SIZE); z++)
+        {
+            cgGLSetParameter3f(wave, SDL_GetTicks()/1000.0f, 1.0f, 1.0f);
+            cgGLSetParameter3f(path,
+                               scene->margins[0],
+                               scene->margins[1],
+                               /*(z-player->m_p.z)*x*LULZFACTOR/100.0f-2.0f*/-4.0f);
+            glVertex3f( x+1, -1.0f, z );
+            glVertex3f( x,   -1.0f, z );
+        }
+        glEnd();
+    }
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //glEnable(GL_CULL_FACE);
+
+    if ( enableCg )
+    {
+        cgGLDisableProfile( cgVertexProfile );
+    }
 
     scene->draw();
     player->draw();
@@ -204,6 +277,9 @@ void handleKeyPress( SDL_keysym *keysym )
         break;
     case SDLK_2:
         outlineSmooth = !outlineSmooth;
+        break;
+    case SDLK_c:
+        enableCg = !enableCg;
         break;
     default:
         break;
