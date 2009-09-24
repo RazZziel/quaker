@@ -1,97 +1,111 @@
 #include "main.hpp"
 #include "CModel.hpp"
 
-extern VECTOR lightAngle;
 extern bool outlineDraw;
 extern bool outlineWidth;
+extern VECTOR lightAngle;
+extern GLuint program_cel;
 
-void Model::draw()
+void Model::draw(bool use_dl)
 {
-    float  TmpShade;       // Temporary Shader Value
-    VECTOR TmpVector;      // Temporary Vector Structures
-    MATRIX TmpMatrix;      // Temporary MATRIX Structure
-
-#ifdef USE_GL_DL
-    if (!m_dl)
+    if (!use_dl || !m_dl)
     {
-        m_dl = glGenLists(1);
-        glNewList( m_dl, GL_COMPILE );
-#endif
-
-        glGetFloatv (GL_MODELVIEW_MATRIX, TmpMatrix.Data);           // Get The Generated Matrix
-
-        /* Cel-Shading Code */
-
-        glEnable (GL_TEXTURE_1D);                                    // Enable 1D Texturing
-        glBindTexture (GL_TEXTURE_1D, m_shaderTexture[0]);           // Bind Our Texture
-
-        glColor3f (1.0f, 1.0f, 1.0f);                                // Set The Color Of The Model
-
-        glBegin (GL_TRIANGLES);                                      // Tell OpenGL That We're Drawing Triangles
+        if (use_dl)
         {
-            for (int i = 0; i < m_polyNum; i++)                      // Loop Through Each Polygon
+            m_dl = glGenLists(1);
+            glNewList( m_dl, GL_COMPILE );
+        }
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+        glEnable (GL_TEXTURE_1D);
+        glBindTexture (GL_TEXTURE_1D, m_shaderTexture[0]);
+
+#if defined(USE_SHADERS_ARB)
+        glEnable(GL_VERTEX_PROGRAM_ARB);
+        glBindProgramARB(GL_VERTEX_PROGRAM_ARB, program_cel);
+        glProgramEnvParameter4fARB(GL_VERTEX_PROGRAM_ARB, 0, unfoldVector(lightAngle), 0.0f);
+# define derpderp(a,b,c,n) glVertex3f(a,b,c)
+#else
+        MATRIX TmpMatrix;
+        glGetFloatv(GL_MODELVIEW_MATRIX, TmpMatrix.Data);
+# define derpderp derp
+#endif
+        glColor3f (1.0f, 1.0f, 1.0f);
+
+        glBegin (GL_TRIANGLES);
+        {
+            for (int i = 0; i < m_polyNum; i++)
             {
-                for (int j = 0; j < 3; j++)                          // Loop Through Each Vertex
+                for (int j = 0; j < 3; j++)
                 {
-                    RotateVector (TmpMatrix, m_polyData[i].Verts[j].Nor, TmpVector);  // Rotate This By The Matrix
-
-                    Normalize (TmpVector);                           // Normalize The New Normal
-
-                    TmpShade = DotProduct (TmpVector, lightAngle);   // Calculate The Shade Value
-
-                    if (TmpShade < 0.0f)
-                        TmpShade = 0.0f;                             // Clamp The Value to 0 If Negative
-
-                    glTexCoord1f (TmpShade);                         // Set The Texture Co-ordinate As The Shade Value
-                    glVertex3fv (&m_polyData[i].Verts[j].Pos.x);     // Send The Vertex Position
+                    // derpderp( unfoldVector(m_polyData[i].Verts[j].Pos),
+                    //           m_polyData[i].Verts[j].Nor );
+                    derpderp( m_polyData[i].Verts[j].Pos.x,
+                              m_polyData[i].Verts[j].Pos.y,
+                              m_polyData[i].Verts[j].Pos.z,
+                              m_polyData[i].Verts[j].Nor );
                 }
             }
         }
         glEnd();
 
+#if defined(USE_SHADERS_ARB)
+        glDisable(GL_VERTEX_PROGRAM_ARB);
+#endif
 
-        glDisable (GL_TEXTURE_1D);                                   // Disable 1D Textures
+        glDisable (GL_TEXTURE_1D);
 
         /* Outline */
 
-        float outlineColor[3] = { 0.0f, 0.0f, 0.0f };                // Color Of The Lines
+        float outlineColor[3] = { 0.0f, 0.0f, 0.0f };
 
-        if (outlineDraw)                                             // Check To See If We Want To Draw The Outline
+        if (outlineDraw)
         {
-            glEnable (GL_BLEND);                                     // Enable Blending
-            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);        // Set The Blend Mode
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
-            glPolygonMode (GL_BACK, GL_LINE);                        // Draw Backfacing Polygons As Wireframes
-            glLineWidth (outlineWidth);                              // Set The Line Width
+            glPolygonMode(GL_BACK, GL_LINE);
+            glLineWidth(outlineWidth);
 
-            glCullFace (GL_FRONT);                                   // Don't Draw Any Front-Facing Polygons
-            glDepthFunc (GL_LEQUAL);                                 // Change The Depth Mode
-            glColor3fv (&outlineColor[0]);                           // Set The Outline Color
+            glCullFace(GL_FRONT);
+            glDepthFunc(GL_LEQUAL);
+            glColor3fv(&outlineColor[0]);
 
-            glBegin (GL_TRIANGLES);                                  // Tell OpenGL What We Want To Draw
+#if 1
+            glBegin (GL_TRIANGLES);
             {
-                for (int i = 0; i < m_polyNum; i++)                  // Loop Through Each Polygon
+                for (int i = 0; i < m_polyNum; i++)
                 {
-                    for (int j = 0; j < 3; j++)                      // Loop Through Each Vertex
+                    for (int j = 0; j < 3; j++)
                     {
-                        glVertex3fv (&m_polyData[i].Verts[j].Pos.x); // Send The Vertex Position
+                        glVertex3f(unfoldVector(m_polyData[i].Verts[j].Pos));
                     }
                 }
             }
-            glEnd ();                                                // Tell OpenGL We've Finished
+            glEnd ();
+#else
+            glDrawElements(GL_TRIANGLES, m_polyNum*3, GL_UNSIGNED_INT, m_polyData);
+#endif
 
             glDepthFunc (GL_LESS);                                   // Reset The Depth-Testing Mode
             glCullFace (GL_BACK);                                    // Reset The Face To Be Culled
             glPolygonMode (GL_BACK, GL_FILL);                        // Reset Back-Facing Polygon Drawing Mode
             glDisable (GL_BLEND);                                    // Disable Blending
+            glPopAttrib();
         }
 
-#ifdef USE_GL_DL
-        glEndList();
+        if (use_dl)
+        {
+            glEndList();
+        }
+        else
+        {
+            return;
+        }
     }
 
     glCallList( m_dl );
-#endif
 }
 
 

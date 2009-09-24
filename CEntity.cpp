@@ -123,9 +123,9 @@ void Player::getInput()
         shoot();
 }
 
-void Object::draw()
+void Object::draw(bool use_dl)
 {
-    m_model->draw();
+    m_model->draw(use_dl);
 }
 
 void Enemy::draw()
@@ -152,7 +152,7 @@ void Player::draw()
         glRotatef (m_v.z*90, 1.0f, 0.0f, 0.0f);
         glRotatef (sin(SDL_GetTicks()/800.0f)*10.0f, 0.0f, 0.0f, 1.0f);
         glRotatef (cos(SDL_GetTicks()/800.0f)*10.0f, 1.0f, 0.0f, 0.0f);
-        Object::draw();
+        Object::draw(false);
     }
     glPopMatrix();
 }

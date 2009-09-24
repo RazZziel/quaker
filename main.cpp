@@ -30,7 +30,7 @@ bool   outlineDraw   = true;
 bool   outlineSmooth = true;
 float  outlineWidth  = 3.0f;
 VECTOR lightAngle    = { 1.0f, -1.0f, 0.0f };
-#ifdef HAVE_CG_H
+#if defined(USE_SHADERS_CG) || defined(USE_SHADERS_ARB)
 bool   enableCg      = true;
 #endif
 
@@ -42,20 +42,61 @@ Model  *model;
 Player *player;
 Camera *camera;
 
-#ifdef HAVE_CG_H
+#if defined(USE_SHADERS_CG)
 CGcontext   cgContext;
 CGprogram   cgProgram;
 CGprofile   cgVertexProfile;
 CGparameter position, color, modelViewMatrix, wave, path;
+#elif defined(USE_SHADERS_ARB)
+GLuint      program_wave, program_cel;
 #endif
 
 void quit()
 {
-#ifdef HAVE_CG_H
+#ifdef USE_SHADERS_CG
     cgDestroyContext( cgContext );
 #endif
     SDL_Quit();
 }
+
+bool load_ARB_program(GLenum target, GLuint *program, const char *filename)
+{
+    glGenProgramsARB(1, program);
+    glBindProgramARB(GL_VERTEX_PROGRAM_ARB, *program);
+
+    ifstream file(filename, ios::in | ios::binary);
+    if(file.fail())
+    {
+        printf("Unable to open vertex program\n");
+        return false;
+    }
+
+    file.seekg(0, ios::end);
+    int size=file.tellg();
+    file.seekg(0, ios::beg);
+
+    unsigned char * program_code=new unsigned char[size];
+    file.read(reinterpret_cast<char *>(program_code), size);
+    file.close();
+
+    glProgramStringARB(target, GL_PROGRAM_FORMAT_ASCII_ARB, size, program_code);
+
+    delete [] program_code;
+
+    const GLubyte * programErrorString=glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+
+    int errorPos;
+    glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &errorPos);
+    if(errorPos!=-1)
+    {
+        fprintf( stderr, "Program error at position %d in %s\n", errorPos, filename );
+        fprintf( stderr, "Error String:\n%s\n", programErrorString );
+        return false;
+    }
+
+    return true;
+}
+
 
 
 void resizeWindow(int width, int height)
@@ -92,8 +133,9 @@ void initGL()
     glDisable(GL_LIGHTING);
 
 
-#ifdef HAVE_CG_H
-    /* Cg */
+    /* Shaders */
+#if defined(USE_SHADERS_CG)
+
     cgContext = cgCreateContext();
     if (cgContext == 0)
     {
@@ -119,11 +161,21 @@ void initGL()
     wave            = cgGetNamedParameter( cgProgram, "IN.wave" );
     path            = cgGetNamedParameter( cgProgram, "IN.path" );
     modelViewMatrix = cgGetNamedParameter( cgProgram, "ModelViewProj" );
+
+#elif defined(USE_SHADERS_ARB)
+
+    glEnable(GL_VERTEX_PROGRAM_ARB);
+
+    load_ARB_program(GL_VERTEX_PROGRAM_ARB, &program_wave, "./cg/wave.asm");
+    load_ARB_program(GL_VERTEX_PROGRAM_ARB, &program_cel, "./cg/cel.asm");
+
+    glDisable(GL_VERTEX_PROGRAM_ARB);
+
 #endif
 
     /* Fog */
     GLfloat fogColor[4]= {0.5f, 0.5f, 0.5f, 1.0f};
-    glClearColor(0.5f,0.5f,0.5f,1.0f);  // We'll clear to the color of the fog ( modified )
+    glClearColor(0.5f,0.5f,0.5f,1.0f);
     glFogi(GL_FOG_MODE, GL_LINEAR);     // Fog mode
     glFogfv(GL_FOG_COLOR, fogColor);    // Set fog color
     glFogf(GL_FOG_DENSITY, 0.35f);      // Fog density
@@ -162,15 +214,21 @@ void drawScene()
     player->getInput();
     player->update();
 
-#ifdef HAVE_CG_H
+#if defined(USE_SHADERS_CG) || defined(USE_SHADERS_ARB)
+
     if ( enableCg )
     {
+# if defined(USE_SHADERS_CG)
         cgGLSetStateMatrixParameter( modelViewMatrix,
                                      CG_GL_MODELVIEW_PROJECTION_MATRIX,
                                      CG_GL_MATRIX_IDENTITY );
         cgGLEnableProfile( cgVertexProfile );
         cgGLBindProgram( cgProgram );
         cgGLSetParameter4f( color, 0.5f, 1.0f, 0.5f, 1.0f );
+# elif defined(USE_SHADERS_ARB)
+        glEnable(GL_VERTEX_PROGRAM_ARB);
+        glBindProgramARB(GL_VERTEX_PROGRAM_ARB, program_wave);
+# endif
     }
 
 #define SIZE 64
@@ -184,11 +242,16 @@ void drawScene()
         glBegin(GL_TRIANGLE_STRIP);
         for (int z = player->m_p.z-(SIZE); z < player->m_p.z+(SIZE); z++)
         {
+# if defined(USE_SHADERS_CG)
             cgGLSetParameter3f(wave, SDL_GetTicks()/1000.0f, 1.0f, 1.0f);
             cgGLSetParameter3f(path,
                                scene->margins[0],
                                scene->margins[1],
                                /*(z-player->m_p.z)*x*LULZFACTOR/100.0f-2.0f*/-4.0f);
+# elif defined(USE_SHADERS_ARB)
+            glProgramLocalParameter4fARB(GL_VERTEX_PROGRAM_ARB, 0,
+                                         SDL_GetTicks()/1000.0f, 0.0f, 0.0f, 0.0f);
+# endif
             glVertex3f( x+1, -1.0f, z );
             glVertex3f( x,   -1.0f, z );
         }
@@ -200,8 +263,13 @@ void drawScene()
 
     if ( enableCg )
     {
+# if defined(USE_SHADERS_CG)
         cgGLDisableProfile( cgVertexProfile );
+# elif defined(USE_SHADERS_ARB)
+        glDisable(GL_VERTEX_PROGRAM_ARB);
+# endif
     }
+
 #endif
 
     scene->draw();
@@ -274,7 +342,7 @@ void handleKeyPress( SDL_keysym *keysym )
     case SDLK_2:
         outlineSmooth = !outlineSmooth;
         break;
-#ifdef HAVE_CG_H
+#if defined(USE_SHADERS_CG) || defined(USE_SHADERS_ARB)
     case SDLK_c:
         enableCg = !enableCg;
         break;

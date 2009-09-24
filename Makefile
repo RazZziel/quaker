@@ -5,6 +5,7 @@ CFLAGS=-Wall -ansi -std=c++0x -g3
 LDFLAGS=-lm -lGL -lGLU -lCg -lCgGL `sdl-config --cflags --libs`
 
 all:
+	make wave.asm -C cg
 	$(CC) ${SRC} ${CFLAGS} -o ${OUT} ${LDFLAGS}
 
 run: all

@@ -62,7 +62,7 @@ public:
         : Entity(p,v) {}
     Object* setModel(Model *model) { m_model = model; return this; }
     Object* setPos(Vec p) { m_p = p; return this; }
-    void draw();
+    void draw(bool use_dl=true);
 //protected:
     Model *m_model;
 };
