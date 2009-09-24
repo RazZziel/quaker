@@ -9,6 +9,9 @@ class Model
 {
 public:
     Model(string fileShader, string fileMesh)
+#ifdef USE_GL_DL
+        : m_dl(0)
+#endif
     {
         readShader( fileShader );
         readMesh( fileMesh );
@@ -27,6 +30,9 @@ public:
     int      m_polyNum;         // Number Of Polygons
     GLuint   m_shaderTexture[1]; // Storage For One Texture
     float    m_shaderData[32][3]; // Storate For The 96 Shader Values
+#ifdef USE_GL_DL
+    GLuint   m_dl;
+#endif
 
     void readShader(string filename);
     void readMesh(string filename);

@@ -3,7 +3,6 @@
 
 extern Player *player;
 extern VECTOR lightAngle;
-extern CGparameter path;
 
 void Scene::draw()
 {

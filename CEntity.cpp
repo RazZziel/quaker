@@ -150,6 +150,8 @@ void Player::draw()
         glTranslatef (unfoldVector(m_p));
         glRotatef (m_v.x*180, 0.0f, 0.0f, 1.0f);
         glRotatef (m_v.z*90, 1.0f, 0.0f, 0.0f);
+        glRotatef (sin(SDL_GetTicks()/800.0f)*10.0f, 0.0f, 0.0f, 1.0f);
+        glRotatef (cos(SDL_GetTicks()/800.0f)*10.0f, 1.0f, 0.0f, 0.0f);
         Object::draw();
     }
     glPopMatrix();

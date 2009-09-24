@@ -19,7 +19,7 @@ vfconn main(appdata IN,	uniform float4x4 ModelViewProj)
     if (IN.position.x < IN.path.x || IN.position.x > IN.path.y)
         IN.position.y = ( sin(IN.wave.x + (IN.position.x / 5.0) ) + sin(IN.wave.x + (IN.position.z / 4.0) ) ) * 2.5f;
     else
-        IN.position.y += IN.path.z;
+        IN.position.y += IN.path.z * cos(IN.position.x/IN.path.y);
 
     // Transform The Vertex Position Into Homogenous Clip-Space (Required)
     OUT.HPos = mul(ModelViewProj, IN.position);

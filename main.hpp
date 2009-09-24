@@ -1,6 +1,9 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
+#define HAVE_CG_H
+#define USE_GL_DL_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -10,8 +13,11 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <Cg/cg.h>
-#include <Cg/cgGL.h>
+
+#ifdef HAVE_CG_H
+# include <Cg/cg.h>
+# include <Cg/cgGL.h>
+#endif
 
 #include <iostream>
 #include <list>
@@ -26,6 +32,13 @@
 #include "CEntity.hpp"
 
 #define LULZFACTOR ( 2 * sin(SDL_GetTicks()/1000.0f) )
+
+#define TRUE  1
+#define FALSE 0
+
+#define SCREEN_WIDTH  640
+#define SCREEN_HEIGHT 480
+#define SCREEN_BPP    32
 
 #define derp(a,b,c,i)                                                   \
     do {                                                                \

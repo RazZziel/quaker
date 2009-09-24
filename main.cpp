@@ -22,27 +22,17 @@
 
 using namespace std;
 
-/* screen width, height, and bit depth */
-#define SCREEN_WIDTH  640
-#define SCREEN_HEIGHT 480
-#define SCREEN_BPP    32
-
-/* Set up some booleans */
-#define TRUE  1
-#define FALSE 0
-
-/* This is our SDL surface */
 SDL_Surface *surface;
 
-
-int isActive = TRUE; /* whether or not the window is active */
-int videoFlags; /* Flags to pass to SDL_SetVideoMode */
+int videoFlags;
 
 bool   outlineDraw   = true;
-bool   enableCg      = true;
 bool   outlineSmooth = true;
 float  outlineWidth  = 3.0f;
 VECTOR lightAngle    = { 1.0f, -1.0f, 0.0f };
+#ifdef HAVE_CG_H
+bool   enableCg      = true;
+#endif
 
 list<Bullet*> bullets;
 list<Enemy*>  enemies;
@@ -52,14 +42,18 @@ Model  *model;
 Player *player;
 Camera *camera;
 
+#ifdef HAVE_CG_H
 CGcontext   cgContext;
 CGprogram   cgProgram;
 CGprofile   cgVertexProfile;
 CGparameter position, color, modelViewMatrix, wave, path;
+#endif
 
 void quit()
 {
+#ifdef HAVE_CG_H
     cgDestroyContext( cgContext );
+#endif
     SDL_Quit();
 }
 
@@ -98,6 +92,7 @@ void initGL()
     glDisable(GL_LIGHTING);
 
 
+#ifdef HAVE_CG_H
     /* Cg */
     cgContext = cgCreateContext();
     if (cgContext == 0)
@@ -124,6 +119,7 @@ void initGL()
     wave            = cgGetNamedParameter( cgProgram, "IN.wave" );
     path            = cgGetNamedParameter( cgProgram, "IN.path" );
     modelViewMatrix = cgGetNamedParameter( cgProgram, "ModelViewProj" );
+#endif
 
     /* Fog */
     GLfloat fogColor[4]= {0.5f, 0.5f, 0.5f, 1.0f};
@@ -161,15 +157,12 @@ void drawScene()
         glDisable (GL_LINE_SMOOTH);                              // Disable Anti-Aliasing
 
     camera->update();
-#if 1
     camera->look();
-#else
-    gluLookAt(0.0f, 25.0f, -45.0f, 0.0f, 0.0f, 0.0f, 0, 1, 0);
-#endif
 
     player->getInput();
     player->update();
 
+#ifdef HAVE_CG_H
     if ( enableCg )
     {
         cgGLSetStateMatrixParameter( modelViewMatrix,
@@ -183,6 +176,7 @@ void drawScene()
 #define SIZE 64
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //glDisable(GL_CULL_FACE);
+    //glEnable(GL_LIGHTING);
     MATRIX TmpMatrix;
     glGetFloatv (GL_MODELVIEW_MATRIX, TmpMatrix.Data);
     for (int x = -(SIZE/2); x < (SIZE/2); x++)
@@ -202,11 +196,13 @@ void drawScene()
     }
     //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     //glEnable(GL_CULL_FACE);
+    //glDisable(GL_LIGHTING);
 
     if ( enableCg )
     {
         cgGLDisableProfile( cgVertexProfile );
     }
+#endif
 
     scene->draw();
     player->draw();
@@ -278,9 +274,11 @@ void handleKeyPress( SDL_keysym *keysym )
     case SDLK_2:
         outlineSmooth = !outlineSmooth;
         break;
+#ifdef HAVE_CG_H
     case SDLK_c:
         enableCg = !enableCg;
         break;
+#endif
     default:
         break;
     }
@@ -296,34 +294,21 @@ void handleEvents()
     {
         switch( event.type )
         {
-        case SDL_ACTIVEEVENT:
-            /* Something's happend with our focus
-             * If we lost focus or we are iconified, we
-             * shouldn't draw the screen
-             */
-            if ( event.active.gain == 0 )
-                isActive = FALSE;
-            else
-                isActive = TRUE;
-            break;
         case SDL_VIDEORESIZE:
-            /* handle resize event */
             surface = SDL_SetVideoMode( event.resize.w,
                                         event.resize.h,
                                         16, videoFlags );
             if ( !surface )
             {
-                fprintf( stderr, "Could not get a surface after resize: %s\n", SDL_GetError( ) );
+                fprintf( stderr, "Could not get a surface after resize: %s\n", SDL_GetError() );
                 exit(1);
             }
             resizeWindow( event.resize.w, event.resize.h );
             break;
         case SDL_KEYDOWN:
-            /* handle key presses */
             handleKeyPress( &event.key.keysym );
             break;
         case SDL_QUIT:
-            /* handle quit requests */
             exit(0);
             break;
         default:
@@ -341,12 +326,9 @@ void main_loop()
     {
         ticks = SDL_GetTicks();
 
-        // if ( isActive )
-        // {
         handleEvents();
         glRotatef(90.0f,0.0f,0.0f,1.0f);
         drawScene();
-        // }
 
         int delay = (1000.0f/fps) - (SDL_GetTicks() - ticks);
         SDL_Delay( delay > 0 ? delay : 1 );
