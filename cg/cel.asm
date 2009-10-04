@@ -1,46 +1,39 @@
 !!ARBvp1.0
-# Vertex Program for cel shading
+# Vertex Program for Cel shading
 
-# Parameters
-PARAM mvp[4]		= { state.matrix.mvp };		#modelview projection matrix
-PARAM lightPosition = program.env[0];			#object space light position
+# Constant Parameters
+PARAM mvp[4]         = { state.matrix.mvp };    # modelview projection matrix
+PARAM lightPosition  = program.local[0];        # Object space light position
 
-# Per vertex inputs
-ATTRIB iPos			= vertex.position;			#position
-ATTRIB iCol0		= vertex.color;				#color
-ATTRIB iNorm		= vertex.normal;			#normal
+# Per-vertex inputs
+ATTRIB inPosition    = vertex.position;         # Position
+ATTRIB inColor       = vertex.color;            # Color
+ATTRIB inNormal      = vertex.normal;           # Normal
 
 # Temporaries
-TEMP lightVector;		#light vector
-TEMP normLightVector;	#normalized light vector
+TEMP lightVector;                               # Light vector
+TEMP normLightVector;                           # Normalized light vector
 
 # Outputs
-OUTPUT oPos			= result.position;			#position
-OUTPUT oCol0		= result.color;				#primary color
-OUTPUT oTex0		= result.texcoord[0];		#texture coordinate set 0
+OUTPUT outPosition   = result.position;         # Position
+OUTPUT outColor      = result.color;            # Primary color
+OUTPUT outTexture    = result.texcoord[0];      # Texture coordinate set 0
 
+# Output position
+DP4 outPosition.x, mvp[0], inPosition;
+DP4 outPosition.y, mvp[1], inPosition;
+DP4 outPosition.z, mvp[2], inPosition;
+DP4 outPosition.w, mvp[3], inPosition;
 
+MOV outColor, inColor;                         # Output color
 
+SUB lightVector, lightPosition, inPosition;    # Calculate light vector
 
-#Output position
-DP4 oPos.x, mvp[0], iPos;
-DP4 oPos.y, mvp[1], iPos;
-DP4 oPos.z, mvp[2], iPos;
-DP4 oPos.w, mvp[3], iPos;
-
-#Output color
-MOV oCol0, iCol0;
-
-#Calculate light vector
-SUB lightVector, lightPosition, iPos;
-
-#Normalize light vector
+# Normalize light vector
 DP3 normLightVector.w, lightVector, lightVector;
 RSQ normLightVector.w, normLightVector.w;
 MUL normLightVector.xyz, normLightVector.w, lightVector;
 
-#Dot light vector with normal
-DP3 oTex0.x, normLightVector, iNorm;
-
+DP3 outTexture.x, normLightVector, inNormal;   # Dot light vector with normal
 
 END

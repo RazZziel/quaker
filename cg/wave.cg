@@ -2,8 +2,8 @@ struct appdata
 {
     float4 position : POSITION;
     float4 color    : COLOR0;
-    float3 wave     : COLOR1;
-    float3 path     : ATTR6;
+    float  wave     : ATTR1;
+    float3 path     : ATTR2;
 };
 
 struct vfconn
@@ -17,7 +17,7 @@ vfconn main(appdata IN,	uniform float4x4 ModelViewProj)
     vfconn OUT;
 
     if (IN.position.x < IN.path.x || IN.position.x > IN.path.y)
-        IN.position.y = ( sin(IN.wave.x + (IN.position.x / 5.0) ) + sin(IN.wave.x + (IN.position.z / 4.0) ) ) * 2.5f;
+        IN.position.y = ( sin(IN.wave + (IN.position.x / 5.0) ) + sin(IN.wave + (IN.position.z / 4.0) ) ) * 2.5f;
     else
         IN.position.y += IN.path.z * cos(IN.position.x/IN.path.y);
 

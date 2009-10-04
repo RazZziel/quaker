@@ -20,19 +20,18 @@
 
 #include "main.hpp"
 
+
 using namespace std;
 
 SDL_Surface *surface;
 
 int videoFlags;
+int w_width, w_height;
 
 bool   outlineDraw   = true;
-bool   outlineSmooth = true;
 float  outlineWidth  = 3.0f;
-VECTOR lightAngle    = { 1.0f, -1.0f, 0.0f };
-#if defined(USE_SHADERS_CG) || defined(USE_SHADERS_ARB)
+Vec    lightAngle(0.0f, 0.0f, 0.0f);
 bool   enableCg      = true;
-#endif
 
 list<Bullet*> bullets;
 list<Enemy*>  enemies;
@@ -42,62 +41,19 @@ Model  *model;
 Player *player;
 Camera *camera;
 
-#if defined(USE_SHADERS_CG)
-CGcontext   cgContext;
-CGprogram   cgProgram;
-CGprofile   cgVertexProfile;
-CGparameter position, color, modelViewMatrix, wave, path;
-#elif defined(USE_SHADERS_ARB)
-GLuint      program_wave, program_cel;
+#if USE_SHADERS == CG
+CGShader    *program_wave;
+#elif USE_SHADERS == ARB
+ARBShader   *program_wave;
+ARBShader   *program_cel;
+#elif USE_SHADERS == GLSL
+GLSLShader  *program_cel;
 #endif
 
 void quit()
 {
-#ifdef USE_SHADERS_CG
-    cgDestroyContext( cgContext );
-#endif
     SDL_Quit();
 }
-
-bool load_ARB_program(GLenum target, GLuint *program, const char *filename)
-{
-    glGenProgramsARB(1, program);
-    glBindProgramARB(GL_VERTEX_PROGRAM_ARB, *program);
-
-    ifstream file(filename, ios::in | ios::binary);
-    if(file.fail())
-    {
-        printf("Unable to open vertex program\n");
-        return false;
-    }
-
-    file.seekg(0, ios::end);
-    int size=file.tellg();
-    file.seekg(0, ios::beg);
-
-    unsigned char * program_code=new unsigned char[size];
-    file.read(reinterpret_cast<char *>(program_code), size);
-    file.close();
-
-    glProgramStringARB(target, GL_PROGRAM_FORMAT_ASCII_ARB, size, program_code);
-
-    delete [] program_code;
-
-    const GLubyte * programErrorString=glGetString(GL_PROGRAM_ERROR_STRING_ARB);
-
-    int errorPos;
-    glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &errorPos);
-    if(errorPos!=-1)
-    {
-        fprintf( stderr, "Program error at position %d in %s\n", errorPos, filename );
-        fprintf( stderr, "Error String:\n%s\n", programErrorString );
-        return false;
-    }
-
-    return true;
-}
-
-
 
 void resizeWindow(int width, int height)
 {
@@ -111,22 +67,27 @@ void resizeWindow(int width, int height)
 
     gluPerspective(45.0f, (GLfloat)width/(GLfloat)height, 0.1f, 100.0f);
     glMatrixMode(GL_MODELVIEW);
+
+    w_width = width;
+    w_height = height;
 }
 
 void initGL()
 {
     resizeWindow( SCREEN_WIDTH, SCREEN_HEIGHT );
 
-    glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Realy Nice perspective calculations
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);   // Realy Nice perspective calculations
 
-    glClearColor (0.7f, 0.7f, 0.7f, 0.0f);               // Light Grey Background
-    glClearDepth (1.0f);                                 // Depth Buffer Setup
+    glClearColor(0.7f, 0.7f, 0.7f, 0.0f);                // Light Grey Background
+    glClearDepth(1.0f);                                  // Depth Buffer Setup
 
-    glEnable (GL_DEPTH_TEST);                            // Enable Depth Testing
-    glDepthFunc (GL_LESS);                               // The Type Of Depth Test To Do
+    glEnable(GL_DEPTH_TEST);                             // Enable Depth Testing
+    glDepthFunc(GL_LESS);                                // The Type Of Depth Test To Do
 
-    glShadeModel (GL_SMOOTH);                            // Enables Smooth Color Shading
-    glDisable (GL_LINE_SMOOTH);                          // Initially Disable Line Smoothing
+    glShadeModel(GL_SMOOTH);                             // Enables Smooth Color Shading
+
+    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+    glEnable(GL_LINE_SMOOTH);
 
     glEnable(GL_CULL_FACE);
 
@@ -134,47 +95,17 @@ void initGL()
 
 
     /* Shaders */
-#if defined(USE_SHADERS_CG)
-
-    cgContext = cgCreateContext();
-    if (cgContext == 0)
-    {
-        fprintf( stderr, "Failed To Create Cg Context\n" );
-        exit(1);
-    }
-    cgVertexProfile = cgGLGetLatestProfile( CG_GL_VERTEX );
-    if (cgVertexProfile == CG_PROFILE_UNKNOWN)
-    {
-        fprintf( stderr, "Invalid profile type\n" );
-        exit(1);
-    }
-    cgGLSetOptimalOptions( cgVertexProfile );
-    cgProgram = cgCreateProgramFromFile( cgContext, CG_SOURCE, "./cg/wave.cg", cgVertexProfile, "main", 0 );
-    if (cgProgram == 0)
-    {
-        fprintf( stderr, "%s \n", cgGetErrorString(cgGetError()) );
-        exit(1);
-    }
-    cgGLLoadProgram(cgProgram);
-    position        = cgGetNamedParameter( cgProgram, "IN.position" );
-    color           = cgGetNamedParameter( cgProgram, "IN.color" );
-    wave            = cgGetNamedParameter( cgProgram, "IN.wave" );
-    path            = cgGetNamedParameter( cgProgram, "IN.path" );
-    modelViewMatrix = cgGetNamedParameter( cgProgram, "ModelViewProj" );
-
-#elif defined(USE_SHADERS_ARB)
-
-    glEnable(GL_VERTEX_PROGRAM_ARB);
-
-    load_ARB_program(GL_VERTEX_PROGRAM_ARB, &program_wave, "./cg/wave.asm");
-    load_ARB_program(GL_VERTEX_PROGRAM_ARB, &program_cel, "./cg/cel.asm");
-
-    glDisable(GL_VERTEX_PROGRAM_ARB);
-
+#if USE_SHADERS == CG
+    program_wave = new CGShader( "cg/wave.cg", "main", CG_GL_VERTEX );
+#elif USE_SHADERS == ARB
+    program_wave = new ARBShader( "cg/wave.asm", GL_VERTEX_PROGRAM_ARB );
+    program_cel = new ARBShader( "cg/cel.asm", GL_VERTEX_PROGRAM_ARB );
+#elif USE_SHADERS == GLSL
+    program_cel = new GLSLShader( "cg/cel.vertex", "cg/cel.fragment" );
 #endif
 
     /* Fog */
-    GLfloat fogColor[4]= {0.5f, 0.5f, 0.5f, 1.0f};
+    GLfloat fogColor[] = {0.5f, 0.5f, 0.5f, 1.0f};
     glClearColor(0.5f,0.5f,0.5f,1.0f);
     glFogi(GL_FOG_MODE, GL_LINEAR);     // Fog mode
     glFogfv(GL_FOG_COLOR, fogColor);    // Set fog color
@@ -195,85 +126,116 @@ void add_enemy()
                             {0.0f, 0.0f, -0.2f+(float)random()/(float)RAND_MAX*-0.8f} ))->setModel(model) );
 }
 
+void drawWaves()
+{
+    static GLuint dl = 0;
+    const int size = 64;
+
+    glPushMatrix();
+    {
+        glTranslatef( 0.0f, 0.0f, player->m_p.z );
+
+        if ( enableCg )
+        {
+#if USE_SHADERS == CG or USE_SHADERS == ARB
+            program_wave->Enable();
+# if USE_SHADERS == CG
+            program_wave->Bind( "IN.color", (float[]) {0.5f, 1.0f, 0.5f, 1.0f}, 4 );
+            program_wave->Bind( "IN.wave",  (float[]) {SDL_GetTicks()/1000.0f}, 1);
+            program_wave->Bind( "IN.path",  (float[]) {scene->margins[0], scene->margins[1], -4.0f}, 3 );
+# elif USE_SHADERS == ARB
+            program_wave->Bind( 0, (float[4]) {0.5f, 1.0f, 0.5f, 1.0f} );
+            program_wave->Bind( 1, (float[4]) {SDL_GetTicks()/1000.0f} );
+            program_wave->Bind( 2, (float[4]) {scene->margins[0], scene->margins[1], -4.0f} );
+# endif
+#endif
+        }
+
+        if (!dl)
+        {
+            dl = glGenLists(1);
+            glNewList( dl, GL_COMPILE );
+            // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            // glDisable(GL_CULL_FACE);
+            // glEnable(GL_LIGHTING);
+
+            for (int x = -(size/2); x < (size/2); x++)
+            {
+                glBegin(GL_TRIANGLE_STRIP);
+                for (float z = -(size); z < (size); z++)
+                {
+                    glVertex3f( x+1, -1.0f, z );
+                    glVertex3f( x,   -1.0f, z );
+                }
+                glEnd();
+            }
+
+            // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            // glEnable(GL_CULL_FACE);
+            // glDisable(GL_LIGHTING);
+
+            glEndList();
+        }
+
+        glCallList( dl );
+
+        if ( enableCg )
+        {
+#if USE_SHADERS == CG or USE_SHADERS == ARB
+            program_wave->Disable();
+#endif
+        }
+
+    }
+    glPopMatrix();
+}
+
+
+void drawFPS(float fps)
+{
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, w_width, 0, w_height);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glRasterPos2f(1.0f,1.0f);
+        char s[32], *c=s;
+        sprintf(s, "%.2f FPS", fps);
+        while (*c)
+            glutBitmapCharacter( GLUT_BITMAP_HELVETICA_18, *c++ );
+    }
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
+
 void drawScene()
 {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);         // Clear The Buffers
     glLoadIdentity ();                                           // Reset The Matrix
 
-    if (outlineSmooth)                                           // Check To See If We Want Anti-Aliased Lines
-    {
-        glHint (GL_LINE_SMOOTH_HINT, GL_NICEST);                 // Use The Good Calculations
-        glEnable (GL_LINE_SMOOTH);                               // Enable Anti-Aliasing
-    }
-    else                                                         // We Don't Want Smooth Lines
-        glDisable (GL_LINE_SMOOTH);                              // Disable Anti-Aliasing
 
     camera->update();
     camera->look();
 
     player->getInput();
     player->update();
+    lightAngle = player->m_p + Vec(3.0f, 3.0f, -0.1f);
 
-#if defined(USE_SHADERS_CG) || defined(USE_SHADERS_ARB)
-
-    if ( enableCg )
-    {
-# if defined(USE_SHADERS_CG)
-        cgGLSetStateMatrixParameter( modelViewMatrix,
-                                     CG_GL_MODELVIEW_PROJECTION_MATRIX,
-                                     CG_GL_MATRIX_IDENTITY );
-        cgGLEnableProfile( cgVertexProfile );
-        cgGLBindProgram( cgProgram );
-        cgGLSetParameter4f( color, 0.5f, 1.0f, 0.5f, 1.0f );
-# elif defined(USE_SHADERS_ARB)
-        glEnable(GL_VERTEX_PROGRAM_ARB);
-        glBindProgramARB(GL_VERTEX_PROGRAM_ARB, program_wave);
-# endif
-    }
-
-#define SIZE 64
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //glDisable(GL_CULL_FACE);
-    //glEnable(GL_LIGHTING);
-    MATRIX TmpMatrix;
-    glGetFloatv (GL_MODELVIEW_MATRIX, TmpMatrix.Data);
-    for (int x = -(SIZE/2); x < (SIZE/2); x++)
-    {
-        glBegin(GL_TRIANGLE_STRIP);
-        for (int z = player->m_p.z-(SIZE); z < player->m_p.z+(SIZE); z++)
-        {
-# if defined(USE_SHADERS_CG)
-            cgGLSetParameter3f(wave, SDL_GetTicks()/1000.0f, 1.0f, 1.0f);
-            cgGLSetParameter3f(path,
-                               scene->margins[0],
-                               scene->margins[1],
-                               /*(z-player->m_p.z)*x*LULZFACTOR/100.0f-2.0f*/-4.0f);
-# elif defined(USE_SHADERS_ARB)
-            glProgramLocalParameter4fARB(GL_VERTEX_PROGRAM_ARB, 0,
-                                         SDL_GetTicks()/1000.0f, 0.0f, 0.0f, 0.0f);
-# endif
-            glVertex3f( x+1, -1.0f, z );
-            glVertex3f( x,   -1.0f, z );
-        }
-        glEnd();
-    }
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    //glEnable(GL_CULL_FACE);
-    //glDisable(GL_LIGHTING);
-
-    if ( enableCg )
-    {
-# if defined(USE_SHADERS_CG)
-        cgGLDisableProfile( cgVertexProfile );
-# elif defined(USE_SHADERS_ARB)
-        glDisable(GL_VERTEX_PROGRAM_ARB);
-# endif
-    }
-
-#endif
-
+    drawWaves();
     scene->draw();
     player->draw();
+
+    checkGlError();
 
     for ( list<Bullet*>::iterator it = bullets.begin();
           it != bullets.end(); )
@@ -317,13 +279,12 @@ void drawScene()
         else
         {
             (*it)->update();
-            (*it)->draw();
+            //(*it)->draw();
             ++it;
         }
     }
 
-    /* Draw it to the screen */
-    SDL_GL_SwapBuffers();
+    checkGlError();
 }
 
 void handleKeyPress( SDL_keysym *keysym )
@@ -339,14 +300,9 @@ void handleKeyPress( SDL_keysym *keysym )
     case SDLK_1:
         outlineDraw = !outlineDraw;
         break;
-    case SDLK_2:
-        outlineSmooth = !outlineSmooth;
-        break;
-#if defined(USE_SHADERS_CG) || defined(USE_SHADERS_ARB)
     case SDLK_c:
         enableCg = !enableCg;
         break;
-#endif
     default:
         break;
     }
@@ -368,8 +324,7 @@ void handleEvents()
                                         16, videoFlags );
             if ( !surface )
             {
-                fprintf( stderr, "Could not get a surface after resize: %s\n", SDL_GetError() );
-                exit(1);
+                die( "Could not get a surface after resize: %s", SDL_GetError() );
             }
             resizeWindow( event.resize.w, event.resize.h );
             break;
@@ -395,12 +350,13 @@ void main_loop()
         ticks = SDL_GetTicks();
 
         handleEvents();
-        glRotatef(90.0f,0.0f,0.0f,1.0f);
+
         drawScene();
-
         int delay = (1000.0f/fps) - (SDL_GetTicks() - ticks);
-        SDL_Delay( delay > 0 ? delay : 1 );
+        SDL_Delay( delay?:1 );
 
+        drawFPS(1000.0f/((SDL_GetTicks() - ticks)?:1));
+        SDL_GL_SwapBuffers();
     }
 }
 
@@ -412,9 +368,7 @@ void initSDL()
     /* initialize SDL */
     if ( SDL_Init( SDL_INIT_VIDEO ) < 0 )
     {
-        fprintf( stderr, "Video initialization failed: %s\n",
-                 SDL_GetError( ) );
-        exit(1);
+        die( "Video initialization failed: %s", SDL_GetError() );
     }
 
     /* Fetch the video info */
@@ -422,9 +376,7 @@ void initSDL()
 
     if ( !videoInfo )
     {
-        fprintf( stderr, "Video query failed: %s\n",
-                 SDL_GetError( ) );
-        exit(1);
+        die( "Video query failed: %s", SDL_GetError() );
     }
 
     /* the flags to pass to SDL_SetVideoMode */
@@ -453,8 +405,7 @@ void initSDL()
     /* Verify there is a surface */
     if ( !surface )
     {
-        fprintf( stderr,  "Video mode set failed: %s\n", SDL_GetError( ) );
-        exit(1);
+        die( "Video mode set failed: %s", SDL_GetError() );
     }
 }
 
@@ -464,10 +415,10 @@ int main(int argc, char **argv)
     atexit( quit );
 
     srandom(time(NULL));
-    Normalize (lightAngle);
 
     initSDL();
     initGL();
+    glutInit(&argc, argv);
 
     model = new Model("Data/Shader.txt", "Data/Model.txt");
     player = (new Player())->setModel(model);

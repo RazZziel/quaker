@@ -37,7 +37,7 @@ void Camera::update()
     if (fabs(dp.z) > m_f)
     {
         // TODO
-        if ( dp.module() >= m_maxDistance )
+        if ( dp.module() >= m_maxDistance/*+(m_follow->m_v.z*4)*/)
         {
             m_v.z = m_follow->m_v.z;
         }
@@ -118,6 +118,21 @@ void Player::getInput()
         m_v.x += m_a.x;
     if ( keystate[SDLK_LEFT] || keystate[SDLK_h] )
         m_v.x -= m_a.x;
+
+    if ( keystate[SDLK_LSHIFT] || keystate[SDLK_RSHIFT] )
+    {
+        m_v_max = {1.0f, 1.0f, 1.0f};
+        m_v.z += copysign(m_v_max.z, m_v.z);
+    }
+    else if ( keystate[SDLK_LCTRL] || keystate[SDLK_RCTRL] )
+    {
+        m_v_max = m_a;
+        m_v.z += copysign(m_v_max.z, m_v.z);
+    }
+    else
+    {
+        m_v_max = {0.3f, 0.3f, 0.3f};
+    }
 
     if ( keystate[SDLK_SPACE] || keystate[SDLK_z] )
         shoot();
