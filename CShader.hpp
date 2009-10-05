@@ -57,7 +57,7 @@ public:
 protected:
     unsigned int program;
 private:
-    void load_shader(const char* filename);
+    void load_shader(const char* filename, GLenum target);
 };
 
 

@@ -7,30 +7,32 @@ static char *get_file_string(const char* filename)
     FILE* file = fopen(filename, "r");
     if (file == NULL)
     {
-        fprintf( stderr, "Could not open '%s'\n", filename );
         return NULL;
     }
 
-    char* data = NULL;
     struct stat filestats;
-    if (stat(filename, &filestats) == 0)
+    if (stat(filename, &filestats) != 0)
     {
-        data = new char[filestats.st_size];
-        size_t bytes = fread(data, 1, filestats.st_size, file);
-        data[bytes] = 0;
+        die( "Could not read '%s'", filename );
+        fclose(file);
+        return NULL;
     }
-    fclose(file);
 
+    char* data;
+    data = new char[filestats.st_size+1];
+    size_t bytes = fread(data, 1, filestats.st_size, file);
+    data[bytes] = 0;
+
+    fclose(file);
     return data;
 }
 
-void GLSLShader::load_shader(const char* filename)
+void GLSLShader::load_shader(const char* filename, GLenum target)
 {
     char *data = get_file_string(filename);
 
     if (data == NULL)
     {
-        fprintf( stderr, "Could not read '%s'\n", filename );
         return;
     }
 
@@ -39,7 +41,7 @@ void GLSLShader::load_shader(const char* filename)
         program = glCreateProgramObjectARB();
     }
 
-    unsigned int object = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
+    unsigned int object = glCreateShaderObjectARB(target);
     glShaderSourceARB(object, 1, (const char**) &data, NULL);
     glCompileShaderARB(object);
     glAttachObjectARB(program, object);
@@ -54,7 +56,7 @@ void GLSLShader::load_shader(const char* filename)
     {
         char error[4096] = {0};
         glGetInfoLogARB(object, sizeof(error), NULL, error);
-        fprintf( stderr, "Error loading '%s': %s\n", filename, error );
+        die2( "%s:0 \n%s", filename, error );
     }
 }
 
@@ -62,147 +64,27 @@ void GLSLShader::load_shader(const char* filename)
 GLSLShader::GLSLShader(const char* vertex_file,
                        const char* fragment_file)
 {
-    // program = 0;
-
-    // load_shader(vertex_file);
-    // load_shader(fragment_file);
-
-    // if (program != 0)
-    // {
-    //     glLinkProgramARB(program);
-
-    //     int linked = 0;
-    //     glGetObjectParameterivARB(program, GL_OBJECT_LINK_STATUS_ARB, &linked);
-
-    //     if (linked == 0)
-    //     {
-    //         char error[4096] = {0};
-    //         glGetInfoLogARB(program, sizeof(error), NULL, error);
-    //         printf("Error linking shader: %s\n", error);
-    //     }
-
-    //     glUseProgramObjectARB(0);
-    // }
-
     program = 0;
 
-    char error[4096] = {0};
-    char* vertex_data = NULL;
-    FILE* file = fopen(vertex_file, "r");
-
-    if (file != NULL) /* A technique for loading shader files by Kevin Harris. */
-    {
-        struct stat filestats;
-
-        if (stat(vertex_file, &filestats) == 0)
-        {
-            vertex_data = new char[filestats.st_size];
-
-            size_t bytes = fread(vertex_data, 1, filestats.st_size, file);
-
-            vertex_data[bytes] = 0;
-        }
-
-        fclose(file);
-    }
-    else
-    {
-        if (vertex_file != NULL)
-        {
-            vertex_data = new char[strlen(vertex_file) + 1];
-            strcpy(vertex_data, vertex_file);
-        }
-    }
-
-    char* fragment_data = NULL;
-    file = fopen(fragment_file, "r");
-
-    if (file != NULL) /* A technique for loading shader files by Kevin Harris. */
-    {
-        struct stat filestats;
-
-        if (stat(fragment_file, &filestats) == 0)
-        {
-            fragment_data = new char[filestats.st_size];
-
-            size_t bytes = fread(fragment_data, 1, filestats.st_size, file);
-
-            fragment_data[bytes] = 0;
-        }
-
-        fclose(file);
-    }
-    else
-    {
-        if (fragment_file != NULL)
-        {
-            fragment_data = new char[strlen(fragment_file) + 1];
-            strcpy(fragment_data, fragment_file);
-        }
-    }
-
-    if (vertex_data != NULL)
-    {
-        program = glCreateProgramObjectARB();
-
-        unsigned int vertex_object = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-        glShaderSourceARB(vertex_object, 1, (const char**) &vertex_data, NULL);
-        glCompileShaderARB(vertex_object);
-        glAttachObjectARB(program, vertex_object);
-        glDeleteObjectARB(vertex_object);
-
-        delete [] vertex_data;
-
-        int compiled = 0;
-        glGetObjectParameterivARB(vertex_object, GL_OBJECT_COMPILE_STATUS_ARB, &compiled);
-
-        if (compiled == 0)
-        {
-            glGetInfoLogARB(vertex_object, sizeof(error), NULL, error);
-            fprintf( stderr, "%s\n", error );
-        }
-    }
-
-    if (fragment_data != NULL)
-    {
-        if (program == 0)
-        {
-            program = glCreateProgramObjectARB();
-        }
-
-        unsigned int fragment_object = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
-        glShaderSourceARB(fragment_object, 1, (const char**) &fragment_data, NULL);
-        glCompileShaderARB(fragment_object);
-        glAttachObjectARB(program, fragment_object);
-        glDeleteObjectARB(fragment_object);
-
-        delete [] fragment_data;
-
-        int compiled = 0;
-        glGetObjectParameterivARB(fragment_object, GL_OBJECT_COMPILE_STATUS_ARB, &compiled);
-
-        if (compiled == 0)
-        {
-            glGetInfoLogARB(fragment_object, sizeof(error), NULL, error);
-            fprintf( stderr, "%s\n", error );
-        }
-    }
+    load_shader(vertex_file, GL_VERTEX_SHADER_ARB);
+    load_shader(fragment_file, GL_FRAGMENT_SHADER_ARB);
 
     if (program != 0)
     {
         glLinkProgramARB(program);
+
         int linked = 0;
         glGetObjectParameterivARB(program, GL_OBJECT_LINK_STATUS_ARB, &linked);
 
         if (linked == 0)
         {
+            char error[4096] = {0};
             glGetInfoLogARB(program, sizeof(error), NULL, error);
-            fprintf( stderr, "%s\n", error );
+            die( "Error linking shader: %s", error );
         }
 
         glUseProgramObjectARB(0);
     }
-
 }
 
 GLSLShader::~GLSLShader()
@@ -254,7 +136,7 @@ void GLSLShader::GetVersion(int& major, int& minor)
     if ((verstr == NULL) || (sscanf(verstr, "%d.%d", &gl_major, &gl_minor) != 2))
     {
         major = minor = 0; /* If we are here, the test has failed! */
-        fprintf(stderr, "Invalid GL_VERSION format! Do you have a valid OpenGL context setup?\n");
+        die3( "Invalid GL_VERSION format! Do you have a valid OpenGL context setup?" );
     }
     else
     {
@@ -275,7 +157,7 @@ void GLSLShader::GetVersion(int& major, int& minor)
             if ((verstr == NULL) || (sscanf(verstr, "%d.%d", &major, &minor) != 2))
             {
                 major = minor = 0; /* If we are here, the test has failed! */
-                fprintf(stderr, "Invalid GL_SHADING_LANGUAGE_VERSION format!\n");
+                die3( "Invalid GL_SHADING_LANGUAGE_VERSION format!" );
             }
         }
     }
@@ -289,7 +171,7 @@ ARBShader::ARBShader(const char* filename, GLenum target)
 
     if (data == NULL)
     {
-        fprintf( stderr, "Could not read '%s'\n", filename );
+        die( "Could not read '%s'", filename );
         return;
     }
 
@@ -301,14 +183,14 @@ ARBShader::ARBShader(const char* filename, GLenum target)
 
     delete [] data;
 
-    const GLubyte * programErrorString=glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+    const char* programErrorString = (char*) glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 
     int errorPos;
     glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &errorPos);
     if(errorPos!=-1)
     {
-        die( "Program error on %s:%d: %s",
-             filename, errorPos, programErrorString );
+        int line = atoi(programErrorString+5);
+        die2( "%s:%d: error: %s", filename, line, programErrorString );
     }
 
     GLenum error = glGetError();
@@ -340,8 +222,6 @@ void ARBShader::Bind(const GLuint index, const float* value)
     glProgramLocalParameter4fvARB(m_target, index, value);
 }
 
-
-
 #if USE_SHADERS == CG
 
 CGShader::CGShader(const char* filename, const char* function, CGGLenum target)
@@ -349,20 +229,21 @@ CGShader::CGShader(const char* filename, const char* function, CGGLenum target)
     cgContext = cgCreateContext();
     if (cgContext == 0)
     {
-        fprintf( stderr, "Failed To Create Cg Context\n" );
+        die3( "Failed To Create Cg Context" );
         return;
     }
     cgProfile = cgGLGetLatestProfile( target );
     if (cgProfile == CG_PROFILE_UNKNOWN)
     {
-        fprintf( stderr, "Invalid profile type\n" );
+        die3( "Invalid profile type" );
         return;
     }
+
     cgGLSetOptimalOptions( cgProfile );
     cgProgram = cgCreateProgramFromFile( cgContext, CG_SOURCE, filename, cgProfile, function, 0 );
     if (cgProgram == 0)
     {
-        fprintf( stderr, "%s \n", cgGetErrorString(cgGetError()) );
+        die( "%s", cgGetErrorString(cgGetError()) );
         return;
     }
     cgGLLoadProgram(cgProgram);

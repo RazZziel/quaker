@@ -47,6 +47,7 @@ CGShader    *program_wave;
 ARBShader   *program_wave;
 ARBShader   *program_cel;
 #elif USE_SHADERS == GLSL
+GLSLShader  *program_wave;
 GLSLShader  *program_cel;
 #endif
 
@@ -98,10 +99,12 @@ void initGL()
 #if USE_SHADERS == CG
     program_wave = new CGShader( "cg/wave.cg", "main", CG_GL_VERTEX );
 #elif USE_SHADERS == ARB
-    program_wave = new ARBShader( "cg/wave.asm", GL_VERTEX_PROGRAM_ARB );
+    //program_wave = new ARBShader( "cg/wave.asm", GL_VERTEX_PROGRAM_ARB );
+    program_wave = new ARBShader( "cg/wave.arb", GL_VERTEX_PROGRAM_ARB );
     program_cel = new ARBShader( "cg/cel.asm", GL_VERTEX_PROGRAM_ARB );
 #elif USE_SHADERS == GLSL
-    program_cel = new GLSLShader( "cg/cel.vertex", "cg/cel.fragment" );
+    program_wave = new GLSLShader( "cg/wave_vertex.glsl", NULL );
+    program_cel = new GLSLShader( "cg/cel_vertex.glsl", "cg/cel_fragment.glsl" );
 #endif
 
     /* Fog */
@@ -137,16 +140,24 @@ void drawWaves()
 
         if ( enableCg )
         {
-#if USE_SHADERS == CG or USE_SHADERS == ARB
+#if USE_SHADERS == CG or USE_SHADERS == ARB or USE_SHADERS == GLSL
             program_wave->Enable();
 # if USE_SHADERS == CG
             program_wave->Bind( "IN.color", (float[]) {0.5f, 1.0f, 0.5f, 1.0f}, 4 );
-            program_wave->Bind( "IN.wave",  (float[]) {SDL_GetTicks()/1000.0f}, 1);
+            program_wave->Bind( "IN.wave",  (float[]) {SDL_GetTicks()/1000.0f}, 1 );
             program_wave->Bind( "IN.path",  (float[]) {scene->margins[0], scene->margins[1], -4.0f}, 3 );
 # elif USE_SHADERS == ARB
-            program_wave->Bind( 0, (float[4]) {0.5f, 1.0f, 0.5f, 1.0f} );
-            program_wave->Bind( 1, (float[4]) {SDL_GetTicks()/1000.0f} );
-            program_wave->Bind( 2, (float[4]) {scene->margins[0], scene->margins[1], -4.0f} );
+            // program_wave->Bind( 0, (float[4]) {0.5f, 1.0f, 0.5f, 1.0f} );
+            // program_wave->Bind( 1, (float[4]) {SDL_GetTicks()/1000.0f} );
+            // program_wave->Bind( 2, (float[4]) {scene->margins[0], scene->margins[1], -4.0f} );
+            program_wave->Bind( 0, (float[4]) {SDL_GetTicks()/1000.0f,
+                                               sinf(SDL_GetTicks()/1000.0f),
+                                               cosf(SDL_GetTicks()/1000.0f),
+                                               tanf(SDL_GetTicks()/1000.0f)} );
+            program_wave->Bind( 1, (float[4]) {scene->margins[0], scene->margins[1], -4.0f} );
+#elif USE_SHADERS == GLSL
+            program_wave->Bind( "wave", (float[]) {SDL_GetTicks()/1000.0f}, 1 );
+            program_wave->Bind( "path", (float[]) {scene->margins[0], scene->margins[1], -4.0f}, 3 );
 # endif
 #endif
         }
@@ -223,7 +234,6 @@ void drawScene()
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);         // Clear The Buffers
     glLoadIdentity ();                                           // Reset The Matrix
 
-
     camera->update();
     camera->look();
 
@@ -279,7 +289,7 @@ void drawScene()
         else
         {
             (*it)->update();
-            //(*it)->draw();
+            (*it)->draw();
             ++it;
         }
     }
@@ -353,7 +363,8 @@ void main_loop()
 
         drawScene();
         int delay = (1000.0f/fps) - (SDL_GetTicks() - ticks);
-        SDL_Delay( delay?:1 );
+        if (delay>0)
+            SDL_Delay( delay );
 
         drawFPS(1000.0f/((SDL_GetTicks() - ticks)?:1));
         SDL_GL_SwapBuffers();

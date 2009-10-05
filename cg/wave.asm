@@ -1,6 +1,6 @@
 !!ARBvp1.0
 # cgc version 2.2.0006, build date Mar 31 2009
-# command line args: -profile arbvp1 -profileopts MaxDrawBuffers=4,NumTemps=32,MaxTexIndirections=4,MaxLocalParams=224
+# command line args: -profile arbvp1
 # source file: wave.cg
 #vendor NVIDIA Corporation
 #version 2.2.0.6

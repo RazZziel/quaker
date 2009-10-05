@@ -17,7 +17,8 @@ vfconn main(appdata IN,	uniform float4x4 ModelViewProj)
     vfconn OUT;
 
     if (IN.position.x < IN.path.x || IN.position.x > IN.path.y)
-        IN.position.y = ( sin(IN.wave + (IN.position.x / 5.0) ) + sin(IN.wave + (IN.position.z / 4.0) ) ) * 2.5f;
+        IN.position.y = ( sin(IN.wave + (IN.position.x / 5.0) ) +
+                          sin(IN.wave + (IN.position.z / 4.0) ) ) * 2.5f;
     else
         IN.position.y += IN.path.z * cos(IN.position.x/IN.path.y);
 

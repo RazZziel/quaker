@@ -1,0 +1,39 @@
+!!ARBvp1.0
+# Vertex Program for wave thing
+
+# Constant Parameters
+PARAM mvp[4] = { state.matrix.mvp };    # modelview projection matrix
+PARAM wave   = program.local[0];        # wave position
+PARAM path   = program.local[1];        # game path
+
+# Per-vertex inputs
+ATTRIB inPosition    = vertex.position;         # Position
+ATTRIB inColor       = vertex.color;            # Color
+ATTRIB inNormal      = vertex.normal;           # Normal
+
+# Temporaries
+TEMP pos;
+TEMP col;
+
+# Outputs
+OUTPUT outPosition   = result.position;         # Position
+OUTPUT outColor      = result.color;            # Primary color
+OUTPUT outTexture    = result.texcoord[0];      # Texture coordinate set 0
+
+
+MOV pos, inPosition;
+#MUL pos.y, pos.x, wave.y;
+
+# Output position
+DP4 outPosition.x, mvp[0], pos;
+DP4 outPosition.y, mvp[1], pos;
+DP4 outPosition.z, mvp[2], pos;
+DP4 outPosition.w, mvp[3], pos;
+
+MOV col, inColor;                         # Output color
+MUL col.x, pos.x, wave.y;
+MUL col.y, pos.y, wave.z;
+MUL col.z, pos.z, wave.w;
+MOV outColor, col;
+
+END
