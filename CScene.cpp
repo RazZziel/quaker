@@ -3,6 +3,7 @@
 
 extern Player *player;
 extern Vec     lightAngle;
+extern bool    doShaders;
 
 #if USE_SHADERS == ARB
 extern ARBShader  *program_cel;
@@ -22,23 +23,26 @@ void Scene::draw()
     glEnable (GL_TEXTURE_1D);
     glBindTexture (GL_TEXTURE_1D, player->m_model->m_shaderTexture[0]);
 
+    if (doShaders)
+    {
 #if USE_SHADERS == ARB or USE_SHADERS == GLSL
-    program_cel->Enable();
+        program_cel->Enable();
 
 # if USE_SHADERS == ARB
-    program_cel->Bind( 0, (float[4]) {unfoldVector(lightAngle), 0.0f} );
+        program_cel->Bind( 0, (float[4]) {unfoldVector(lightAngle), 0.0f} );
 # define derpderp(a,b,c,n) glVertex3f(a,b,c)
 # elif USE_SHADERS == GLSL
-    program_cel->Bind( "light_position", lightAngle );
+        program_cel->Bind( "light_position", lightAngle );
 //# define derpderp derp3
 # define derpderp(a,b,c,n) glVertex3f(a,b,c)
 # endif
 
 #else
-    MATRIX TmpMatrix;
-    glGetFloatv(GL_MODELVIEW_MATRIX, TmpMatrix.Data);
+            MATRIX TmpMatrix;
+            glGetFloatv(GL_MODELVIEW_MATRIX, TmpMatrix.Data);
 # define derpderp derp2
 #endif
+    }
 
     glPushMatrix();
     {
@@ -84,9 +88,12 @@ void Scene::draw()
     }
     glPopMatrix();
 
+    if (doShaders)
+    {
 #if USE_SHADERS == ARB
-    program_cel->Disable();
+        program_cel->Disable();
 #endif
+    }
 
     glDisable (GL_TEXTURE_1D);
     glPopAttrib();

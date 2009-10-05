@@ -31,7 +31,7 @@ int w_width, w_height;
 bool   outlineDraw   = true;
 float  outlineWidth  = 3.0f;
 Vec    lightAngle(0.0f, 0.0f, 0.0f);
-bool   enableCg      = true;
+bool   doShaders     = true;
 
 list<Bullet*> bullets;
 list<Enemy*>  enemies;
@@ -138,7 +138,7 @@ void drawWaves()
     {
         glTranslatef( 0.0f, 0.0f, player->m_p.z );
 
-        if ( enableCg )
+        if ( doShaders )
         {
 #if USE_SHADERS == CG or USE_SHADERS == ARB or USE_SHADERS == GLSL
             program_wave->Enable();
@@ -190,7 +190,7 @@ void drawWaves()
 
         glCallList( dl );
 
-        if ( enableCg )
+        if ( doShaders )
         {
 #if USE_SHADERS == CG or USE_SHADERS == ARB
             program_wave->Disable();
@@ -311,7 +311,7 @@ void handleKeyPress( SDL_keysym *keysym )
         outlineDraw = !outlineDraw;
         break;
     case SDLK_c:
-        enableCg = !enableCg;
+        doShaders = !doShaders;
         break;
     default:
         break;

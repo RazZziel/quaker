@@ -1,9 +1,10 @@
 #include "main.hpp"
 #include "CModel.hpp"
 
-extern bool outlineDraw;
+extern bool  outlineDraw;
 extern float outlineWidth;
-extern Vec  lightAngle;
+extern Vec   lightAngle;
+extern bool  doShaders;
 
 #if USE_SHADERS == ARB
 extern ARBShader  *program_cel;
@@ -40,21 +41,25 @@ void Model::draw(bool use_dl)
         //glBindTexture(GL_TEXTURE_1D, m_shaderTexture[0]);
 #endif
 
+        if (doShaders)
+        {
 #if USE_SHADERS == ARB or USE_SHADERS == GLSL
-        program_cel->Enable();
+            program_cel->Enable();
 # define derpderp(a,b,c,n) glVertex3f(a,b,c)
 
 # if USE_SHADERS == ARB
-        program_cel->Bind( 0, (float[4]) {unfoldVector(lightAngle), 0.0f} );
+            program_cel->Bind( 0, (float[4]) {unfoldVector(lightAngle), 0.0f} );
 # elif USE_SHADERS == GLSL
-        program_cel->Bind( "light_position", lightAngle );
+            program_cel->Bind( "light_position", lightAngle );
 # endif
 
 #else
-        MATRIX TmpMatrix;
-        glGetFloatv(GL_MODELVIEW_MATRIX, TmpMatrix.Data);
+            MATRIX TmpMatrix;
+            glGetFloatv(GL_MODELVIEW_MATRIX, TmpMatrix.Data);
 # define derpderp derp
 #endif
+        }
+
         glColor3f(1.0f, 1.0f, 1.0f);
 
         glBegin (GL_TRIANGLES);
@@ -73,9 +78,13 @@ void Model::draw(bool use_dl)
         }
         glEnd();
 
+        if (doShaders)
+        {
 #if USE_SHADERS == ARB or USE_SHADERS == GLSL
-        program_cel->Disable();
+            program_cel->Disable();
 #endif
+        }
+
         glDisable (GL_TEXTURE_1D);
 
         /* Outline */
