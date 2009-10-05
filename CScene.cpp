@@ -23,6 +23,9 @@ void Scene::draw()
     glEnable (GL_TEXTURE_1D);
     glBindTexture (GL_TEXTURE_1D, player->m_model->m_shaderTexture[0]);
 
+    MATRIX TmpMatrix;
+    glGetFloatv(GL_MODELVIEW_MATRIX, TmpMatrix.Data);
+
     if (doShaders)
     {
 #if USE_SHADERS == ARB or USE_SHADERS == GLSL
@@ -38,8 +41,6 @@ void Scene::draw()
 # endif
 
 #else
-            MATRIX TmpMatrix;
-            glGetFloatv(GL_MODELVIEW_MATRIX, TmpMatrix.Data);
 # define derpderp derp2
 #endif
     }

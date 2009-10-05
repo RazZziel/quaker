@@ -100,7 +100,8 @@ void initGL()
     program_wave = new CGShader( "cg/wave.cg", "main", CG_GL_VERTEX );
 #elif USE_SHADERS == ARB
     //program_wave = new ARBShader( "cg/wave.asm", GL_VERTEX_PROGRAM_ARB );
-    program_wave = new ARBShader( "cg/wave.arb", GL_VERTEX_PROGRAM_ARB );
+    program_wave = new ARBShader( "cg/wave.asm2", GL_VERTEX_PROGRAM_ARB );
+    //program_wave = new ARBShader( "cg/wave.arb", GL_VERTEX_PROGRAM_ARB );
     program_cel = new ARBShader( "cg/cel.asm", GL_VERTEX_PROGRAM_ARB );
 #elif USE_SHADERS == GLSL
     program_wave = new GLSLShader( "cg/wave_vertex.glsl", NULL );
@@ -231,8 +232,8 @@ void drawFPS(float fps)
 
 void drawScene()
 {
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);         // Clear The Buffers
-    glLoadIdentity ();                                           // Reset The Matrix
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glLoadIdentity ();
 
     camera->update();
     camera->look();

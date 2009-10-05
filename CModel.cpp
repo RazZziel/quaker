@@ -41,6 +41,9 @@ void Model::draw(bool use_dl)
         //glBindTexture(GL_TEXTURE_1D, m_shaderTexture[0]);
 #endif
 
+        MATRIX TmpMatrix;
+        glGetFloatv(GL_MODELVIEW_MATRIX, TmpMatrix.Data);
+
         if (doShaders)
         {
 #if USE_SHADERS == ARB or USE_SHADERS == GLSL
@@ -54,8 +57,6 @@ void Model::draw(bool use_dl)
 # endif
 
 #else
-            MATRIX TmpMatrix;
-            glGetFloatv(GL_MODELVIEW_MATRIX, TmpMatrix.Data);
 # define derpderp derp
 #endif
         }

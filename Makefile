@@ -6,6 +6,7 @@ LDFLAGS=-lm -lGL -lGLU -lglut -lCg -lCgGL `sdl-config --cflags --libs`
 
 all:
 	make wave.asm -C cg
+	make wave.asm2 -C cg
 	$(CC) ${SRC} ${CFLAGS} -o ${OUT} ${LDFLAGS}
 
 run: all
