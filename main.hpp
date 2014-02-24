@@ -5,7 +5,7 @@
 #define CG   1
 #define ARB  2
 #define GLSL 3
-#define USE_SHADERS CG
+#define USE_SHADERS GLSL
 
 #include <stdio.h>
 #include <stdlib.h>

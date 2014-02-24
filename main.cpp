@@ -105,7 +105,8 @@ void initGL()
     program_cel = new ARBShader( "cg/cel.asm", GL_VERTEX_PROGRAM_ARB );
 #elif USE_SHADERS == GLSL
     program_wave = new GLSLShader( "cg/wave_vertex.glsl", NULL );
-    program_cel = new GLSLShader( "cg/cel_vertex.glsl", "cg/cel_fragment.glsl" );
+    // program_cel = new GLSLShader( "cg/cel_vertex.glsl", "cg/cel_fragment.glsl" );
+    program_cel = new GLSLShader( NULL, "cg/blur.glsl" );
 #endif
 
     /* Fog */
@@ -321,35 +322,6 @@ void handleKeyPress( SDL_keysym *keysym )
     return;
 }
 
-void handleEvents()
-{
-    SDL_Event event;
-
-    while ( SDL_PollEvent( &event ) )
-    {
-        switch( event.type )
-        {
-        case SDL_VIDEORESIZE:
-            surface = SDL_SetVideoMode( event.resize.w,
-                                        event.resize.h,
-                                        16, videoFlags );
-            if ( !surface )
-            {
-                die( "Could not get a surface after resize: %s", SDL_GetError() );
-            }
-            resizeWindow( event.resize.w, event.resize.h );
-            break;
-        case SDL_KEYDOWN:
-            handleKeyPress( &event.key.keysym );
-            break;
-        case SDL_QUIT:
-            exit(0);
-            break;
-        default:
-            break;
-        }
-    }
-}
 
 void main_loop()
 {
