@@ -145,21 +145,28 @@ void drawWaves()
 #if USE_SHADERS == CG or USE_SHADERS == ARB or USE_SHADERS == GLSL
             program_wave->Enable();
 # if USE_SHADERS == CG
-            program_wave->Bind( "IN.color", (float[]) {0.5f, 1.0f, 0.5f, 1.0f}, 4 );
-            program_wave->Bind( "IN.wave",  (float[]) {SDL_GetTicks()/1000.0f}, 1 );
-            program_wave->Bind( "IN.path",  (float[]) {scene->margins[0], scene->margins[1], -4.0f}, 3 );
+            float color[] = { 0.5f, 1.0f, 0.5f, 1.0f };
+            float wave[] = { SDL_GetTicks()/1000.0f };
+            float path[] = { scene->margins[0], scene->margins[1], -4.0f };
+            program_wave->Bind( "IN.color", color, 4 );
+            program_wave->Bind( "IN.wave", wave, 1 );
+            program_wave->Bind( "IN.path", path, 3 );
 # elif USE_SHADERS == ARB
             // program_wave->Bind( 0, (float[4]) {0.5f, 1.0f, 0.5f, 1.0f} );
             // program_wave->Bind( 1, (float[4]) {SDL_GetTicks()/1000.0f} );
             // program_wave->Bind( 2, (float[4]) {scene->margins[0], scene->margins[1], -4.0f} );
-            program_wave->Bind( 0, (float[4]) {SDL_GetTicks()/1000.0f,
-                                               sinf(SDL_GetTicks()/1000.0f),
-                                               cosf(SDL_GetTicks()/1000.0f),
-                                               tanf(SDL_GetTicks()/1000.0f)} );
-            program_wave->Bind( 1, (float[4]) {scene->margins[0], scene->margins[1], -4.0f} );
+            float p0[] = { SDL_GetTicks()/1000.0f,
+                           sinf(SDL_GetTicks()/1000.0f),
+                           cosf(SDL_GetTicks()/1000.0f),
+                           tanf(SDL_GetTicks()/1000.0f) };
+            float p1[] = { scene->margins[0], scene->margins[1], -4.0f };
+            program_wave->Bind( 0, p0 );
+            program_wave->Bind( 1, p1 );
 #elif USE_SHADERS == GLSL
-            program_wave->Bind( "wave", (float[]) {SDL_GetTicks()/1000.0f}, 1 );
-            program_wave->Bind( "path", (float[]) {scene->margins[0], scene->margins[1], -4.0f}, 3 );
+            float wave[] = { SDL_GetTicks()/1000.0f };
+            float path[] = { scene->margins[0], scene->margins[1], -4.0f };
+            program_wave->Bind( "wave", wave, 1 );
+            program_wave->Bind( "path", path, 3 );
 # endif
 #endif
         }
@@ -322,6 +329,35 @@ void handleKeyPress( SDL_keysym *keysym )
     return;
 }
 
+void handleEvents()
+{
+    SDL_Event event;
+
+    while ( SDL_PollEvent( &event ) )
+    {
+        switch( event.type )
+        {
+        case SDL_VIDEORESIZE:
+            surface = SDL_SetVideoMode( event.resize.w,
+                                        event.resize.h,
+                                        16, videoFlags );
+            if ( !surface )
+            {
+                die( "Could not get a surface after resize: %s", SDL_GetError() );
+            }
+            resizeWindow( event.resize.w, event.resize.h );
+            break;
+        case SDL_KEYDOWN:
+            handleKeyPress( &event.key.keysym );
+            break;
+        case SDL_QUIT:
+            exit(0);
+            break;
+        default:
+            break;
+        }
+    }
+}
 
 void main_loop()
 {
@@ -392,7 +428,6 @@ void initSDL()
         die( "Video mode set failed: %s", SDL_GetError() );
     }
 }
-
 
 int main(int argc, char **argv)
 {

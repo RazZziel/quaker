@@ -51,7 +51,8 @@ void Model::draw(bool use_dl)
 # define derpderp(a,b,c,n) glVertex3f(a,b,c)
 
 # if USE_SHADERS == ARB
-            program_cel->Bind( 0, (float[4]) {unfoldVector(lightAngle), 0.0f} );
+            float lightAngle2[] = { unfoldVector(lightAngle), 0.0f };
+            program_cel->Bind( 0, lightAngle2 );
 # elif USE_SHADERS == GLSL
             program_cel->Bind( "light_position", lightAngle );
 # endif

@@ -14,5 +14,6 @@ run: all
 
 clean:
 	@echo Cleaning up...
-	@rm ${OUT}
+	@rm -f ${OUT}
+	make clean -C cg
 	@echo Done.

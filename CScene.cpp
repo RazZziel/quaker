@@ -32,7 +32,8 @@ void Scene::draw()
         program_cel->Enable();
 
 # if USE_SHADERS == ARB
-        program_cel->Bind( 0, (float[4]) {unfoldVector(lightAngle), 0.0f} );
+        float lightAngle2[] = { unfoldVector(lightAngle), 0.0f };
+        program_cel->Bind( 0, lightAngle2 );
 # define derpderp(a,b,c,n) glVertex3f(a,b,c)
 # elif USE_SHADERS == GLSL
         program_cel->Bind( "light_position", lightAngle );
