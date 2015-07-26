@@ -1,19 +1,17 @@
-
-      Small experiment to learn OpenGL, shaders and all that samba
+Small experiment to learn OpenGL, shaders and all that samba
       
 <p align="center">
   <img src="http://i.imgur.com/DjfNtgo.png"/>
 </p>
 
-      Based on Linux/SDL example for NeHe's OpenGL Tutorial #37
-             http://nehe.gamedev.net
+Based on Linux/SDL example for NeHe's OpenGL Tutorial #37: http://nehe.gamedev.net
 
-      Thanks to:
-             Sami Hamlaoui (MENTAL)
-             Jeff Molofee (NeHe)
-             Sean Farrel
-             Ti Leggett
-             Kah-Wah Tang
+Thanks to:
+- Sami Hamlaoui (MENTAL)
+- Jeff Molofee (NeHe)
+- Sean Farrel
+- Ti Leggett
+- Kah-Wah Tang
 
 
 TODO:
